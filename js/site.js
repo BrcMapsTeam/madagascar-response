@@ -20,12 +20,14 @@ function initDash() {
 
     var legend = L.control({ position: 'bottomright' });
 
+    // LEGEND
     legend.onAdd = function (map) {
 
         var div = L.DomUtil.create('div', 'info legend'),
-            labels = ['0 - 19', '20 - 39', '40 - 59', '60 - 79', '80 - 99', '100'];
+        //[10, 100, 500, 5000, 10000]
+            labels = ["10000 - 20000", "5001 - 10000", "501 - 5000", "101 - 500", "11 - 100", "0 - 10"];
 
-        div.innerHTML = 'Percent (%) of<br />medical centers reached<br />';
+        div.innerHTML = 'Number of<br />Affected Households<br />';
         for (var i = 0; i < labels.length; i++) {
             div.innerHTML +=
                 '<i style="background:' + colors[i] + '"></i> ' + labels[5 - i] + '<br />';
@@ -40,7 +42,6 @@ function initDash() {
     $('.dash').show();
 
     addGeomToMap(adm_geoms[1]);
-
 }
 
 // initialising crossfilter data
@@ -118,7 +119,7 @@ function addGeomToMap(geom) {
             var value = statsHash[feature.properties['P_CODE']].mapValue;
         }
 
-        var color = 0
+        var color = 0;
 
         values.forEach(function (v) {
             if (value > v) { color++ }
@@ -145,6 +146,7 @@ function onEachFeature(feature, layer) {
 
     if (feature.properties['P_CODE'] in statsHash) {
         var value = statsHash[feature.properties['P_CODE']].mapValue;
+        //console.log("feature.properties['P_CODE']]", statsHash[feature.properties['P_CODE']], feature.properties['P_CODE']);
     }
     var pcodelengths = [3, 5, 8, 11];
     var layerlevel = pcodelengths.indexOf(feature.properties['P_CODE'].length); //admNames[layerlevel]=REGION
@@ -180,13 +182,13 @@ function onEachFeature(feature, layer) {
             panel.breadcrumbs = breadcrumbs;
         }
     }); // End layer on click
-
-    panel.affected = value;
+    panel.breadcrumbspcode = breadcrumbspcode;
     panel.breadcrumbs = breadcrumbs;
     populateInfoPanel(panel);
 
     layer.on('mouseover', function () {
         $('.ipc-info').html('<p>' + feature.properties[admNames[layerlevel]] + '</p><p>Affected HouseHolds: ' + value + '</p>');
+        //$('#panel-data').html("Total affected in "+ feature.properties[admNames[layerlevel]]+": " + value);
     });
     layer.on('mouseout', function () {
         $('.ipc-info').html('Hover for details');
@@ -198,7 +200,9 @@ function onEachFeature(feature, layer) {
 // Adding data on side panel, including breadcrumbs, and making breadcrumbs clickable
 
 function populateInfoPanel(data) {
-    $('#panel-data').html(data.affected);
+    //console.log(data);
+    //var affected = statsHash[data.breadcrumbspcode[0]].mapValue;
+    //$('#panel-data').html("Total affected in this area: " + affected);
     breadcrumbs.forEach(function (c, i) {
         if (i == 0) {
             $('#panel-breadcrumbs').html('<span id="bc' + i + '">' + c + '</span>');
@@ -213,7 +217,6 @@ function populateInfoPanel(data) {
         $('#bc' + i).on('click', function () {
             if (i+1 === admlevel) { return;} //if clicked on current level, nothing happens
             changeLayer(admlevel, i+1);
-            console.log("bpcode=", breadcrumbspcode);
         });
     });
 }
@@ -223,7 +226,6 @@ function filterGeom(geom, filter, length) {
     var newFeatures = [];
     var newgeom = jQuery.extend({}, geom); //creates new object from geom
     newgeom.features.forEach(function (f) {
-        console.log(filter);
         if (f.properties['P_CODE'].substring(0, length) == filter) {
             newFeatures.push(f);
         }
@@ -285,6 +287,31 @@ function changeLayer(currentLayer, newLayer) {
     addGeomToMap(newGeom);
 }
 
+function createTable(data) {
+    console.log(data);
+    try {
+        //Creating headers for table
+        var headerNames = ["admin1", "households affected"];
+        var headers = "<tr>";
+        headerNames.forEach(function(c, i){
+            headers = headers.concat("<th>" + c + "</th>");
+        });
+        headers = headers.concat("</tr>");
+
+        //Creating table
+
+        var tableRows = "";
+        Object.keys(data).forEach(function(c, i){
+            if (c.length < 6) {
+                tableRows = tableRows.concat("<tr><td>" + c + "</td>" + "<td>" + data[c].mapValue + "</td></tr>");
+            } 
+        })
+        console.log(tableRows);
+
+        //Adding table to code
+        $("#dataTable").html(headers+tableRows);
+    } catch (e) { console.log("Error creating the table: ", e.message) }
+}
 
 $('.dash').hide();
 
@@ -345,6 +372,7 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     //data = "Array of Objects in the following format: array[1] = #sector: "MDG1"
     statsHash = createStatsHash(data);
     initDash();
+    createTable(statsHash);
 
     // Return Top level button
     $('#reinit').click(function (e) {
