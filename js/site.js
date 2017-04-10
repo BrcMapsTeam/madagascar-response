@@ -92,7 +92,6 @@ function addGeomToMap(geom) {
             onEachFeature: onEachFeature
         });
         overlays[1].addTo(map);
-        console.log("2");
     }
     if (admlevel == 2) {
         overlays[2] = L.geoJson(geom, {
@@ -108,7 +107,6 @@ function addGeomToMap(geom) {
         });
         overlays[3].addTo(map);
     }
-    console.log("test");
     zoomToGeom(geom);
 
     function styleGeom(feature) {
@@ -143,17 +141,17 @@ function addGeomToMap(geom) {
 function onEachFeature(feature, layer) {
 
     var value = 0;
+    var panel = {};
+
     if (feature.properties['P_CODE'] in statsHash) {
         var value = statsHash[feature.properties['P_CODE']].mapValue;
     }
     var pcodelengths = [3, 5, 8, 11];
     var layerlevel = pcodelengths.indexOf(feature.properties['P_CODE'].length); //admNames[layerlevel]=REGION
     layer.on('click', function (e) {
-        console.log("e=", e)
         if (layerlevel == admlevel) {
             breadcrumbs[admlevel] = feature.properties[admNames[layerlevel]];
             breadcrumbspcode[admlevel] = e.target.feature.properties['P_CODE'];
-            console.log(breadcrumbs);
             if (admlevel < 3) {
                 overlays[admlevel].setStyle({
                     fillColor: "#999999",
@@ -178,15 +176,14 @@ function onEachFeature(feature, layer) {
             admlevel = layerlevel + 1;
             var newGeom = filterGeom(adm_geoms[admlevel], e.target.feature.properties['P_CODE'], pcodelengths[admlevel - 1]);
             addGeomToMap(newGeom);
-
+            panel.affected = value;
+            panel.breadcrumbs = breadcrumbs;
         }
-
-        var panel = {}
-        panel.affected = value;
-        panel.breadcrumbs = breadcrumbs;
-        console.log("b=", admNames);
-        populateInfoPanel(panel);
     }); // End layer on click
+
+    panel.affected = value;
+    panel.breadcrumbs = breadcrumbs;
+    populateInfoPanel(panel);
 
     layer.on('mouseover', function () {
         $('.ipc-info').html('<p>' + feature.properties[admNames[layerlevel]] + '</p><p>Affected HouseHolds: ' + value + '</p>');
@@ -201,7 +198,6 @@ function onEachFeature(feature, layer) {
 // Adding data on side panel, including breadcrumbs, and making breadcrumbs clickable
 
 function populateInfoPanel(data) {
-    var pcodelengths = [3, 5, 8, 11];
     $('#panel-data').html(data.affected);
     breadcrumbs.forEach(function (c, i) {
         if (i == 0) {
@@ -210,24 +206,24 @@ function populateInfoPanel(data) {
             if (c !== '') {
                 $('#panel-breadcrumbs').append('<span id="bc' + i + '"> > ' + c + '</span>');
             }
+            else {
+                $("#bc" + i).remove();
+            }
         }
         $('#bc' + i).on('click', function () {
-            for (j = i + 2; j <= admlevel; j++) {
-                console.log("j=", j, admlevel);
-                map.removeLayer(overlays[j]);
-                breadcrumbs[j] = '';
-                breadcrumbspcode[j] = '';
-            }
-            var newGeom = filterGeom(adm_geoms[i + 1], breadcrumbspcode[i], pcodelengths[i]);
-            addGeomToMap(newGeom);
+            if (i+1 === admlevel) { return;} //if clicked on current level, nothing happens
+            changeLayer(admlevel, i+1);
+            console.log("bpcode=", breadcrumbspcode);
         });
     });
 }
 
+// Function checks whether the geom feature is inside "filter" and if not then doesn't add it to the newgeom
 function filterGeom(geom, filter, length) {
     var newFeatures = [];
-    var newgeom = jQuery.extend({}, geom);
+    var newgeom = jQuery.extend({}, geom); //creates new object from geom
     newgeom.features.forEach(function (f) {
+        console.log(filter);
         if (f.properties['P_CODE'].substring(0, length) == filter) {
             newFeatures.push(f);
         }
@@ -272,8 +268,9 @@ function hxlProxyToJSON(input) {
 // Function sets new breadcrumbs depending on current layer and new layer
 function setBreadcrumbs(currentLayer, newLayer) {
     // admin1=1, admin2=2
-    for (i = newLayer + 1; i <= currentLayer; i++) {
+    for (i = newLayer; i < 4; i++) {
         breadcrumbs[i] = '';
+        breadcrumbspcode[i] = '';
     }
 }
 
@@ -283,7 +280,9 @@ function changeLayer(currentLayer, newLayer) {
     map.removeLayer(overlays[currentLayer]);
     admlevel = newLayer;
     setBreadcrumbs(currentLayer, newLayer);
-    addGeomToMap(adm_geoms[newLayer]);
+    var newGeom = filterGeom(adm_geoms[newLayer], breadcrumbspcode[newLayer-1], pcodelengths[newLayer-1]);
+    //removing breadcrumbs
+    addGeomToMap(newGeom);
 }
 
 
@@ -296,9 +295,10 @@ var overlays = [];
 var data, data3W;
 var colors = ['#4575b4', '#91bfdb', '#e0f3f8', '#fee090', '#fc8d59', '#d73027'];
 var statsHash = {};
-var breadcrumbspcode = ['Mdg', '', '', ''];
+var breadcrumbspcode = ['MDG', '', '', ''];
 var breadcrumbs = ['Madagascar', '', '', ''];
 var adm_geoms = [];
+var pcodelengths = [3, 5, 8, 11];
 
 var admNames = ['Country', 'REGION', 'DISTRICT', 'COMMUNE'];
 
