@@ -291,8 +291,8 @@ function createTable(data) {
     console.log(data);
     try {
         //Creating headers for table
-        var headerNames = ["admin1", "households affected"];
-        var headers = "<tr>";
+        var headerNames = ["ADMIN1", "Households affected"];
+        var headers = "<tbody><tr>";
         headerNames.forEach(function(c, i){
             headers = headers.concat("<th>" + c + "</th>");
         });
@@ -306,6 +306,7 @@ function createTable(data) {
                 tableRows = tableRows.concat("<tr><td>" + c + "</td>" + "<td>" + data[c].mapValue + "</td></tr>");
             } 
         })
+        tableRows = tableRows.concat("</tbody>");
         console.log(tableRows);
 
         //Adding table to code

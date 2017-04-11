@@ -1,3 +1,7 @@
+body{
+   font-family:Verdana, sans-serif;
+}
+
 #hdx-ipc-map {
     height:500px;
     width:100%;
@@ -77,6 +81,8 @@
     opacity: 0.7;
 }
 
+/*----------BREADCRUMBS-------------*/
+
 #panel-breadcrumbs{
     font-size: 1.5em;
 }
@@ -89,4 +95,47 @@
     color:#26004d;
     cursor: pointer; 
     cursor: hand;
+}
+
+/*----------Data Table-------------*/
+
+#dataTable{
+    margin-top:3em;
+    text-align:center;
+    border-collapse: collapse;
+    display: -webkit-box;  /* OLD - iOS 6-, Safari 3.1-6, BB7 */
+    display: -ms-flexbox;  /* TWEENER - IE 10 */
+    display: -webkit-flex; /* NEW - Safari 6.1+. iOS 7.1+, BB10 */
+    display: flex;         /* NEW, Spec - Firefox, Chrome, Opera */
+    justify-content:space-around;
+}
+
+#dataTable tr, td{
+    padding: 10px;
+    border: solid #e6e6e6 1px;
+}
+
+#dataTable th{
+    display: table-cell;
+    color:white;
+    text-align:center;
+    padding: 20px;
+    font-weight:200;
+    font-size: 1.4em;
+    font-family: Calibri, sans-serif;
+}
+
+#dataTable th:nth-child(even){
+    border: #3973ac solid 1px;
+    background-color:#3973ac;
+}
+
+#dataTable th:nth-child(odd){
+    border: 	#304050 solid 1px;
+    background-color:	#304050;
+}
+
+
+#dataTable th, #dataTable td{
+    width: 15em;
 }
