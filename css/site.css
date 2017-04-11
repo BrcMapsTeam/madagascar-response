@@ -76,3 +76,17 @@
     margin-right: 8px;
     opacity: 0.7;
 }
+
+#panel-breadcrumbs{
+    font-size: 1.5em;
+}
+
+.hover-link{
+    color:#0080ff;
+}
+
+.hover-link:hover{
+    color:#26004d;
+    cursor: pointer; 
+    cursor: hand;
+}

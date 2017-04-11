@@ -205,10 +205,10 @@ function populateInfoPanel(data) {
     //$('#panel-data').html("Total affected in this area: " + affected);
     breadcrumbs.forEach(function (c, i) {
         if (i == 0) {
-            $('#panel-breadcrumbs').html('<span id="bc' + i + '">' + c + '</span>');
+            $('#panel-breadcrumbs').html('<span id="bc' + i + '" class="hover-link">' + c + '</span>');
         } else {
             if (c !== '') {
-                $('#panel-breadcrumbs').append('<span id="bc' + i + '"> > ' + c + '</span>');
+                $('#panel-breadcrumbs').append(' > <span id="bc' + i + '"class="hover-link">' + c + '</span>');
             }
             else {
                 $("#bc" + i).remove();
