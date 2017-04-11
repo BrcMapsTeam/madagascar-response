@@ -44,41 +44,45 @@ function initDash() {
     addGeomToMap(adm_geoms[1]);
 }
 
-// initialising crossfilter data
-function createStatsHash(data) {
+// creates data for each admin group 1,2, and 3 and puts it all in the same variable
+//Keys is an array eg: ['#adm1+code','#adm2+code','#adm3+code'] 
+function createStatsHash(data, keys, variable) {
     output = {};
 
     cf = crossfilter(data);
 
-    cf.adm1Dim = cf.dimension(function (d) { return d['#adm1+code'] });
-    cf.adm2Dim = cf.dimension(function (d) { return d['#adm2+code'] });
-    cf.adm3Dim = cf.dimension(function (d) { return d['#adm3+code'] });
+    cf.adm1Dim = cf.dimension(function (d) { return d[keys[0]] });
+    cf.adm2Dim = cf.dimension(function (d) { return d[keys[1]] });
+    cf.adm3Dim = cf.dimension(function (d) { return d[keys[2]] });
 
     cf.adm1group = cf.adm1Dim.group().reduceSum(function (d) {
-        return d['#affected+households+idps'];
+        return d[variable];
     });
 
     cf.adm1group.top(Infinity).forEach(function (d, i) {
         output[d.key] = {};
         output[d.key].mapValue = d.value;
+        output[d.key].var = keys[0];
     });
 
     cf.adm2group = cf.adm2Dim.group().reduceSum(function (d) {
-        return d['#affected+households+idps'];
+        return d[variable];
     });
 
     cf.adm2group.top(Infinity).forEach(function (d, i) {
         output[d.key] = {};
         output[d.key].mapValue = d.value;
+        output[d.key].var = keys[1];
     });
 
     cf.adm3group = cf.adm3Dim.group().reduceSum(function (d) {
-        return d['#affected+households+idps'];
+        return d[variable];
     });
 
     cf.adm3group.top(Infinity).forEach(function (d, i) {
         output[d.key] = {};
         output[d.key].mapValue = d.value;
+        output[d.key].var = keys[2];
     });
 
     return output;
@@ -287,11 +291,9 @@ function changeLayer(currentLayer, newLayer) {
     addGeomToMap(newGeom);
 }
 
-function createTable(data) {
-    console.log(data);
+function createTable(data, headerNames) {
     try {
         //Creating headers for table
-        var headerNames = ["ADMIN1", "Households affected"];
         var headers = "<tbody><tr>";
         headerNames.forEach(function(c, i){
             headers = headers.concat("<th>" + c + "</th>");
@@ -302,12 +304,9 @@ function createTable(data) {
 
         var tableRows = "";
         Object.keys(data).forEach(function(c, i){
-            if (c.length < 6) {
-                tableRows = tableRows.concat("<tr><td>" + c + "</td>" + "<td>" + data[c].mapValue + "</td></tr>");
-            } 
+                tableRows = tableRows.concat("<tr><td>" + c + "</td>" + "<td>" + data[c] + "</td></tr>");
         })
         tableRows = tableRows.concat("</tbody>");
-        console.log(tableRows);
 
         //Adding table to code
         $("#dataTable").html(headers+tableRows);
@@ -371,9 +370,18 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     adm_geoms[2] = topojson.feature(geomadm2Args[0], geomadm2Args[0].objects.mdg_adm2);
     adm_geoms[3] = topojson.feature(geomadm3Args[0], geomadm3Args[0].objects.mdg_adm3);
     //data = "Array of Objects in the following format: array[1] = #sector: "MDG1"
-    statsHash = createStatsHash(data);
+    statsHash = createStatsHash(data, ['#adm1+code','#adm2+code','#adm3+code'],'#affected+households+idps');
     initDash();
-    createTable(statsHash);
+    var statsWithNames = createStatsHash(data, ['#adm1+name', '#adm2+name', '#adm3+name'], '#affected+households+idps');
+    var statsAdmin1 = {};
+    Object.keys(statsWithNames).forEach(function (c, i) {
+        console.log(statsAdmin1[c]);
+        if (statsWithNames[c].var === "#adm1+name") {
+            statsAdmin1[c] = statsWithNames[c].mapValue;
+        }
+    })
+    console.log(statsAdmin1);
+    createTable(statsAdmin1, ["Admin1", "Households affected"]);
 
     // Return Top level button
     $('#reinit').click(function (e) {
