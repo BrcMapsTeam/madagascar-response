@@ -6,10 +6,12 @@
         <link rel="shortcut icon" href="favicon.ico">
         <link rel="stylesheet" ype="text/css" href="css/bootstrap.min.css"/>
         <link rel="stylesheet" type="text/css" href="css/leaflet.css"/>
+        <link rel="stylesheet" type="text/css" href="css/dc.css" />
         <link rel="stylesheet" type="text/css" href="css/site.css"/>
         <script src="js/jquery-2.1.4.min.js"></script>
         <script src="js/d3.min.js"></script>
         <script src="js/crossfilter.v1.min.js"></script>
+        <script src="js/dc.js"></script>
         <script src="js/leaflet.js"></script>
         <script src="js/topojson.v1.min.js"></script>
         <script src="js/bootstrap.min.js"></script>
@@ -35,7 +37,9 @@
                 </div>
                 <div id="header" class="row margintop20">
                     <div class="col-sm-8">  
-                        <p id="description">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec dolor magna, sollicitudin eget arcu sed, pulvinar efficitur mauris. Aliquam ut congue nunc. Sed sed ex lacus. Nam velit dolor, tempor vitae velit eget, tempus tempus tellus. Vivamus et nibh elit. Proin finibus ante vel metus ultricies, nec commodo ipsum mattis. Proin id euismod sem.</p>
+                        <p id="description">
+                            Please click on the map below to drill down to lower admin levels. To return/change level, you can click on the map, use the reset button or the navigation links.
+                        </p>
                     </div>                            
                     <div class="col-sm-2">
                         <a id="reinit" class="btn btn-primary">Return top level</a>
@@ -52,10 +56,14 @@
                     </div>
                     <div class="col-md-6">
                         <div id="panel-breadcrumbs"></div>
-                        <div id="panel-data"></div> 
-                        <div id="dataTable"></div> 
-                        <div id="gapChart"></div>                        
-                    </div>                                                         
+                        <div id="panel-data"></div>
+                        <div id="gapChart"></div>
+                        <div id="admin"></div>
+                        <div id="errorText"></div>       
+                    </div>
+                    <div class="col-md-6">
+                        <div id="dataTable"></div>       
+                    </div>                                                   
                 </div>                                                
         </div>
         <script src="js/site.js"></script>

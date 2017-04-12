@@ -139,3 +139,16 @@ body{
 #dataTable th, #dataTable td{
     width: 15em;
 }
+
+.dc-chart g.row text{
+    fill:black;
+}
+
+#gapChart, #admin{
+    width:100%;
+    font-size:10px;
+}
+
+#errorText p{
+    padding-top: 50px;
+}

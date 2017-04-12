@@ -2,24 +2,28 @@ var config = {
     affected: '#affected+households+idps',
     targeted: '#targeted',
     reached: '#reached',
+    colors:['#ef8f8f','#9a181a','#841517','#ef8f8f','#6e1113','#580e0f','#420a0b','#2c0708'],
     dataNeedURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//data.humdata.org/dataset/94b6d7f8-9b6d-4bca-81d7-6abb83edae16/resource/3ed3635b-7cee-4fa1-aec6-6f0318886092/download/Assesment_data_CRM__05April2017.xlsx&strip-headers=on',
     data3WURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0&strip-headers=on&force=on'
 //'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&force=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
 };
 
-
+var noPointsToShow = "<p>Cette r\xE9gion n'a pas \xE9t\xE9 affect\xE9e.</p>";
 var map;
 var info;
 var admlevel = 1;
 var overlays = [];
 var colors = ['#4575b4', '#91bfdb', '#e0f3f8', '#fee090', '#fc8d59', '#d73027'];
 var statsHash = {};
+var statsWithNames = {};
+var statsHash3WTargeted = {};
+var statsHash3WReached = {};
+var mergedData = [];
 var breadcrumbspcode = ['MDG', '', '', ''];
 var breadcrumbs = ['Madagascar', '', '', ''];
 var adm_geoms = [];
 var pcodelengths = [3, 5, 8, 11];
 var admNames = ['Country', 'REGION', 'DISTRICT', 'COMMUNE'];
-
 
 
 // CREATING MAP
@@ -63,6 +67,7 @@ function initDash() {
 
     $('.loading').hide();
     $('.dash').show();
+    showCharts('');
 
     addGeomToMap(adm_geoms[1]);
 }
@@ -91,7 +96,7 @@ function createStatsHash(data, keys, variable) {
 
         cf.adm1group.top(Infinity).forEach(function (d, i) {
             output[d.key] = {};
-            output[d.key][variable] = d.value;
+            output[d.key].mapValue = d.value;
             output[d.key].var = keys[0];
         });
 
@@ -99,7 +104,7 @@ function createStatsHash(data, keys, variable) {
 
         cf.adm2group.top(Infinity).forEach(function (d, i) {
             output[d.key] = {};
-            output[d.key][variable] = d.value;
+            output[d.key].mapValue = d.value;
             output[d.key].var = keys[1];
         });
 
@@ -107,7 +112,7 @@ function createStatsHash(data, keys, variable) {
 
         cf.adm3group.top(Infinity).forEach(function (d, i) {
             output[d.key] = {};
-            output[d.key][variable] = d.value;
+            output[d.key].mapValue = d.value;
             output[d.key].var = keys[2];
         });
 
@@ -147,7 +152,7 @@ function addGeomToMap(geom) {
 
         var value = 0;
         if (feature.properties['P_CODE'] in statsHash) {
-            var value = statsHash[feature.properties['P_CODE']][config.affected];
+            var value = statsHash[feature.properties['P_CODE']].mapValue;
         }
 
         var color = 0;
@@ -176,12 +181,13 @@ function onEachFeature(feature, layer) {
     var panel = {};
 
     if (feature.properties['P_CODE'] in statsHash) {
-        var value = statsHash[feature.properties['P_CODE']][config.affected];
+        var value = statsHash[feature.properties['P_CODE']].mapValue;
         //console.log("feature.properties['P_CODE']]", statsHash[feature.properties['P_CODE']], feature.properties['P_CODE']);
     }
     var pcodelengths = [3, 5, 8, 11];
     var layerlevel = pcodelengths.indexOf(feature.properties['P_CODE'].length); //admNames[layerlevel]=REGION
     layer.on('click', function (e) {
+        var newGeom;
         if (layerlevel == admlevel) {
             breadcrumbs[admlevel] = feature.properties[admNames[layerlevel]];
             breadcrumbspcode[admlevel] = e.target.feature.properties['P_CODE'];
@@ -195,7 +201,7 @@ function onEachFeature(feature, layer) {
                 });
 
                 admlevel++;
-                var newGeom = filterGeom(adm_geoms[admlevel], e.target.feature.properties['P_CODE'], pcodelengths[admlevel - 1]);
+                newGeom = filterGeom(adm_geoms[admlevel], e.target.feature.properties['P_CODE'], pcodelengths[admlevel - 1]);
                 addGeomToMap(newGeom);
             }
         } else {
@@ -207,11 +213,12 @@ function onEachFeature(feature, layer) {
             breadcrumbs[layerlevel] = e.target.feature.properties[admNames[layerlevel]];
             breadcrumbspcode[layerlevel] = e.target.feature.properties['P_CODE'];
             admlevel = layerlevel + 1;
-            var newGeom = filterGeom(adm_geoms[admlevel], e.target.feature.properties['P_CODE'], pcodelengths[admlevel - 1]);
+            newGeom = filterGeom(adm_geoms[admlevel], e.target.feature.properties['P_CODE'], pcodelengths[admlevel - 1]);
             addGeomToMap(newGeom);
             panel.affected = value;
             panel.breadcrumbs = breadcrumbs;
         }
+        showCharts(newGeom.features, layerlevel);
     }); // End layer on click
     panel.breadcrumbspcode = breadcrumbspcode;
     panel.breadcrumbs = breadcrumbs;
@@ -264,6 +271,7 @@ function filterGeom(geom, filter, length) {
         }
     });
     newgeom.features = newFeatures;
+    console.log(newFeatures);
     return newgeom;
 }
 
@@ -318,15 +326,16 @@ function changeLayer(currentLayer, newLayer) {
     var newGeom = filterGeom(adm_geoms[newLayer], breadcrumbspcode[newLayer-1], pcodelengths[newLayer-1]);
     //removing breadcrumbs
     addGeomToMap(newGeom);
+
+    showCharts(newGeom.features, admlevel-1);
 }
 
-function createTable(initData, headerNames) {
+function createTable(headerNames) {
     try {
-        var statsWithNames = createStatsHash(initData, ['#adm1+name', '#adm2+name', '#adm3+name'], config.affected);
         var data = {};
         Object.keys(statsWithNames).forEach(function (c, i) {
             if (statsWithNames[c].var === "#adm1+name") {
-                data[c] = statsWithNames[c][config.affected];
+                data[c] = statsWithNames[c].mapValue;
             }
         })
         //Creating headers for table
@@ -381,16 +390,165 @@ var geomadm3Call = $.ajax({
     dataType: 'json',
 });
 
-//This function assumes data1 contains all the admin information and merges the data in all the objects
+//This function assumes data1 contains all the admin information 
+//and merges the 3 datasets into a crossfilter friendly format
+
 function mergeData(data1, data2, data3) {
     try {
+        function transform(dataset, status) {
+            var newData = [];
+            Object.keys(dataset).forEach(function (c, i) {
+                newData[i] = {};
+                newData[i]['code'] = c;
+                $.extend(newData[i], dataset[c]);
+            })
+            newData.forEach(function (c, i) {
+                c["status"] = status;
+            })
+            return newData;
+        };
+        set1 = transform(data1, "affected");
+        set2 = transform(data2, "targeted");
+        set3 = transform(data3, "reached");
+        set2.forEach(function (c, i) {
+            set1.push(c);
+        })
+        set3.forEach(function (c, i) {
+            set1.push(c);
+        })
 
+        return set1;
     } catch (e) { console.log("Couldn't merge the dataset from the sources: ", e)}
 }
 
-function createCharts() {
+function createCharts(data) {
     try {
+        $('#gapChart').html('');
+        $('#admin').html('');
+        $('#errorText').html('');
+        var cf = crossfilter(data);
+
+        var numberOfDataPoints = cf.groupAll().reduceCount().value();
+
+        if (numberOfDataPoints === 0) {
+            $('#errorText').html(noPointsToShow);
+            return;
+        } else {
+            var gapChart = dc.rowChart('#gapChart');
+            var admin = dc.rowChart('#admin');
+
+            var codeDimension = cf.dimension(function (d) { return d["code"]; });
+            var statusDimension = cf.dimension(function (d) { return d["status"]; });
+            var varDimension = cf.dimension(function (d) { return d["var"]; });
+            var valueDimension = cf.dimension(function (d) { return d["mapValue"]; });
+
+            var codeGroup = codeDimension.group();
+            var statusGroup = statusDimension.group();
+            var varGroup = varDimension.group();
+
+            var values = statusGroup.reduceSum(function (d) {
+                if (isNaN(d.mapValue)) {
+                    return 0;
+                } else {
+                    return d.mapValue;
+                }
+            });
+            var codeSum = codeGroup.reduceSum(function (d) {
+                if (isNaN(d.mapValue)) {
+                    return 0;
+                } else {
+                    return d.mapValue;
+                }
+            });
+
+            gapChart.width($('#gapChart').width())
+                .dimension(statusDimension)
+                .group(values)
+                .elasticX(true)
+                .height(150)
+                .data(function (group) {
+                    return group.top(15);
+                })
+                .labelOffsetY(13)
+                //.colors(config.colors)
+                //.colorDomain([0, 7])
+                //.colorAccessor(function (d, i) { return 3; })
+                .xAxis().ticks(5);
+
+            admin.width($('#admin').width())
+                .dimension(codeDimension)
+                .group(codeSum)
+                .elasticX(true)
+                .data(function (group) {
+                    return group.top(10);
+                })
+                .height(320)
+                .labelOffsetY(13)
+                //.colors(config.colors)
+                //.colorDomain([0, 7])
+                //.colorAccessor(function (d, i) { return 3; })
+                .xAxis().ticks(5);
+        }
+        dc.renderAll();
+
+        var g = d3.selectAll('#admin').select('svg').append('g');
+
+        g.append('text')
+            .attr('class', 'x-axis-label')
+            .attr('text-anchor', 'middle')
+            .attr('x', $('#admin').width() / 2)
+            .attr('y', 320)
+            .text('Affected Households');
+
+        var g1 = d3.selectAll('#gapChart').select('svg').append('g');
+
+        g1.append('text')
+            .attr('class', 'x-axis-label')
+            .attr('text-anchor', 'middle')
+            .attr('x', $('#gapChart').width() / 2)
+            .attr('y', 150)
+            .text('Households');
+
     } catch (e) { console.log("Error generating the chart:", e) }
+}
+
+function filterData(data, code, variableName) {
+    var newData = [];
+    data.forEach(function (c, i) {
+        if (c[variableName] === code) {
+            newData.push(c);
+        }
+    })
+    //console.log(newData);
+    return newData;
+}
+
+
+//function showsCharts depending on admin level
+function showCharts(newGeom, level) {
+    var adminName = '';
+    breadcrumbs.forEach(function (c, i) {
+        if (c !== '') {
+            adminName = c;
+        };
+    })
+    if (adminName === 'Madagascar'||newGeom === "") {
+        var dataAdminM = filterData(mergedData, '#adm1+name', 'var');
+        createCharts(dataAdminM);
+    } else {
+        var tempGeom = [];
+        var dataAdmin = [];
+        newGeom.forEach(function (c, i) {
+            tempGeom[i] = c.properties[admNames[level+1]];
+        })
+        tempGeom.forEach(function (c, i) {
+            filterData(mergedData, c, 'code').forEach(function (c, i) {
+                dataAdmin.push(c);
+            })
+        })
+        console.log(dataAdmin);
+        createCharts(dataAdmin);
+    }
 }
 
 $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(function (dataNeedArgs, data3WArgs, geomadm1Args, geomadm2Args, geomadm3Args) {
@@ -402,13 +560,12 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     //data = "Array of Objects in the following format: array[1] = #sector: "MDG1"
 
     statsHash = createStatsHash(data, ['#adm1+code', '#adm2+code', '#adm3+code'], config.affected);
-    statsHash3WTargeted = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.targeted);
-    statsHash3WReached = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.reached);
-    console.log(statsHash3WTargeted, statsHash3WReached, statsHash);
-    mergedData = mergeData(statsHash, statsHash3WTargeted, statsHash3WReached);
+    statsWithNames = createStatsHash(data, ['#adm1+name', '#adm2+name', '#adm3+name'], config.affected);
+    statsHash3WTargeted = createStatsHash(data3w, ['#adm1+name', '#adm2+name', '#adm3+name'], config.targeted);
+    statsHash3WReached = createStatsHash(data3w, ['#adm1+name', '#adm2+name', '#adm3+name'], config.reached);
+    mergedData = mergeData(statsWithNames, statsHash3WTargeted, statsHash3WReached);
     initDash();
-    createCharts();
-    createTable(data, ["Admin1", "Households affected"]);
+    console.log(mergedData);
 
     // Return Top level button
     $('#reinit').click(function (e) {
