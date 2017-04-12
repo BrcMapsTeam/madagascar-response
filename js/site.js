@@ -45,47 +45,51 @@ function initDash() {
 }
 
 // creates data for each admin group 1,2, and 3 and puts it all in the same variable
-//Keys is an array eg: ['#adm1+code','#adm2+code','#adm3+code'] 
+//Keys is an array eg: ['#adm1+code','#adm2+code','#adm3+code'] , variable example: '#affected+households+idps'
 function createStatsHash(data, keys, variable) {
-    output = {};
+    try {
+        output = {};
 
-    cf = crossfilter(data);
+        cf = crossfilter(data);
 
-    cf.adm1Dim = cf.dimension(function (d) { return d[keys[0]] });
-    cf.adm2Dim = cf.dimension(function (d) { return d[keys[1]] });
-    cf.adm3Dim = cf.dimension(function (d) { return d[keys[2]] });
+        cf.adm1Dim = cf.dimension(function (d) { return d[keys[0]] });
+        cf.adm2Dim = cf.dimension(function (d) { return d[keys[1]] });
+        cf.adm3Dim = cf.dimension(function (d) { return d[keys[2]] });
 
-    cf.adm1group = cf.adm1Dim.group().reduceSum(function (d) {
-        return d[variable];
-    });
+        var reduceSumVar = function (d) {
+            if (isNaN(d[variable])) {
+                return 0;
+            } else {
+                return d[variable];
+            }
+        };
 
-    cf.adm1group.top(Infinity).forEach(function (d, i) {
-        output[d.key] = {};
-        output[d.key].mapValue = d.value;
-        output[d.key].var = keys[0];
-    });
+        cf.adm1group = cf.adm1Dim.group().reduceSum(reduceSumVar);
 
-    cf.adm2group = cf.adm2Dim.group().reduceSum(function (d) {
-        return d[variable];
-    });
+        cf.adm1group.top(Infinity).forEach(function (d, i) {
+            output[d.key] = {};
+            output[d.key].affected = d.value;
+            output[d.key].var = keys[0];
+        });
 
-    cf.adm2group.top(Infinity).forEach(function (d, i) {
-        output[d.key] = {};
-        output[d.key].mapValue = d.value;
-        output[d.key].var = keys[1];
-    });
+        cf.adm2group = cf.adm2Dim.group().reduceSum(reduceSumVar);
 
-    cf.adm3group = cf.adm3Dim.group().reduceSum(function (d) {
-        return d[variable];
-    });
+        cf.adm2group.top(Infinity).forEach(function (d, i) {
+            output[d.key] = {};
+            output[d.key].affected = d.value;
+            output[d.key].var = keys[1];
+        });
 
-    cf.adm3group.top(Infinity).forEach(function (d, i) {
-        output[d.key] = {};
-        output[d.key].mapValue = d.value;
-        output[d.key].var = keys[2];
-    });
+        cf.adm3group = cf.adm3Dim.group().reduceSum(reduceSumVar);
 
-    return output;
+        cf.adm3group.top(Infinity).forEach(function (d, i) {
+            output[d.key] = {};
+            output[d.key].affected = d.value;
+            output[d.key].var = keys[2];
+        });
+
+        return output;
+    } catch (e) { console.log("Error creating the Stats Hash (check inputs): ", e.message) }
 }
 
 // Creates the admin layers for the map 
@@ -120,7 +124,7 @@ function addGeomToMap(geom) {
 
         var value = 0;
         if (feature.properties['P_CODE'] in statsHash) {
-            var value = statsHash[feature.properties['P_CODE']].mapValue;
+            var value = statsHash[feature.properties['P_CODE']].affected;
         }
 
         var color = 0;
@@ -149,7 +153,7 @@ function onEachFeature(feature, layer) {
     var panel = {};
 
     if (feature.properties['P_CODE'] in statsHash) {
-        var value = statsHash[feature.properties['P_CODE']].mapValue;
+        var value = statsHash[feature.properties['P_CODE']].affected;
         //console.log("feature.properties['P_CODE']]", statsHash[feature.properties['P_CODE']], feature.properties['P_CODE']);
     }
     var pcodelengths = [3, 5, 8, 11];
@@ -205,21 +209,23 @@ function onEachFeature(feature, layer) {
 
 function populateInfoPanel(data) {
     //console.log(data);
-    //var affected = statsHash[data.breadcrumbspcode[0]].mapValue;
+    //var affected = statsHash[data.breadcrumbspcode[0]].affected;
     //$('#panel-data').html("Total affected in this area: " + affected);
     breadcrumbs.forEach(function (c, i) {
         if (i == 0) {
             $('#panel-breadcrumbs').html('<span id="bc' + i + '" class="hover-link">' + c + '</span>');
+            $('#dataTable').css({ "display": "flex" });
         } else {
             if (c !== '') {
                 $('#panel-breadcrumbs').append(' > <span id="bc' + i + '"class="hover-link">' + c + '</span>');
+                $('#dataTable').css({ "display": "none" });
             }
             else {
                 $("#bc" + i).remove();
             }
         }
         $('#bc' + i).on('click', function () {
-            if (i+1 === admlevel) { return;} //if clicked on current level, nothing happens
+            if (i+1 === admlevel) { return; } //if clicked on current level, nothing happens
             changeLayer(admlevel, i+1);
         });
     });
@@ -291,11 +297,18 @@ function changeLayer(currentLayer, newLayer) {
     addGeomToMap(newGeom);
 }
 
-function createTable(data, headerNames) {
+function createTable(initData, headerNames) {
     try {
+        var statsWithNames = createStatsHash(initData, ['#adm1+name', '#adm2+name', '#adm3+name'], '#affected+households+idps');
+        var data = {};
+        Object.keys(statsWithNames).forEach(function (c, i) {
+            if (statsWithNames[c].var === "#adm1+name") {
+                data[c] = statsWithNames[c].affected;
+            }
+        })
         //Creating headers for table
         var headers = "<tbody><tr>";
-        headerNames.forEach(function(c, i){
+        headerNames.forEach(function(c, i){ 
             headers = headers.concat("<th>" + c + "</th>");
         });
         headers = headers.concat("</tr>");
@@ -309,7 +322,7 @@ function createTable(data, headerNames) {
         tableRows = tableRows.concat("</tbody>");
 
         //Adding table to code
-        $("#dataTable").html(headers+tableRows);
+        $("#dataTable").html(headers + tableRows);
     } catch (e) { console.log("Error creating the table: ", e.message) }
 }
 
@@ -331,7 +344,8 @@ var admNames = ['Country', 'REGION', 'DISTRICT', 'COMMUNE'];
 
 var dataNeedURL = 'https://proxy.hxlstandard.org/data.json?url=https%3A//data.humdata.org/dataset/94b6d7f8-9b6d-4bca-81d7-6abb83edae16/resource/3ed3635b-7cee-4fa1-aec6-6f0318886092/download/Assesment_data_CRM__05April2017.xlsx&strip-headers=on';
 // change for new data
-var data3WURL = 'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&force=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
+var data3WURL = "https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0&strip-headers=on&force=on";
+    //'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&force=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
 
 var dataNeedCall = $.ajax({
     type: 'GET',
@@ -370,18 +384,13 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     adm_geoms[2] = topojson.feature(geomadm2Args[0], geomadm2Args[0].objects.mdg_adm2);
     adm_geoms[3] = topojson.feature(geomadm3Args[0], geomadm3Args[0].objects.mdg_adm3);
     //data = "Array of Objects in the following format: array[1] = #sector: "MDG1"
-    statsHash = createStatsHash(data, ['#adm1+code','#adm2+code','#adm3+code'],'#affected+households+idps');
+
+    statsHash = createStatsHash(data, ['#adm1+code', '#adm2+code', '#adm3+code'], '#affected+households+idps');
+    statsHash3WTargeted = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], '#targeted');
+    statsHash3WReached = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], '#reached');
+    console.log(statsHash3WTargeted, statsHash3WReached, statsHash);
     initDash();
-    var statsWithNames = createStatsHash(data, ['#adm1+name', '#adm2+name', '#adm3+name'], '#affected+households+idps');
-    var statsAdmin1 = {};
-    Object.keys(statsWithNames).forEach(function (c, i) {
-        console.log(statsAdmin1[c]);
-        if (statsWithNames[c].var === "#adm1+name") {
-            statsAdmin1[c] = statsWithNames[c].mapValue;
-        }
-    })
-    console.log(statsAdmin1);
-    createTable(statsAdmin1, ["Admin1", "Households affected"]);
+    createTable(data, ["Admin1", "Households affected"]);
 
     // Return Top level button
     $('#reinit').click(function (e) {
