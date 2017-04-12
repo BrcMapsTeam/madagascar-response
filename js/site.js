@@ -428,17 +428,17 @@ function createCharts(data) {
         var statusGroup = statusDimension.group();
         var varGroup = varDimension.group();
 
-        //var values = valueDimension.reduceSum(function (d) {
-        //    if (isNaN(d.mapValue)) {
-        //        return 0;
-        //    } else {
-        //        return d.mapValue;
-        //    }
-        //});
+        var values = statusGroup.reduceSum(function (d) {
+            if (isNaN(d.mapValue)) {
+                return 0;
+            } else {
+                return d.mapValue;
+            }
+        });
 
         gapChart.width(300)
             .dimension(statusDimension)
-            .group(statusGroup)
+            .group(values)
             .elasticX(true)
             .height(300)
             //.data(function (group) {
