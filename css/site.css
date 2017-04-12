@@ -143,3 +143,7 @@ body{
 .dc-chart g.row text{
     fill:black;
 }
+
+#gapChart, #admin{
+    width:100%;
+}

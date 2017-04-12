@@ -15,6 +15,8 @@ var admlevel = 1;
 var overlays = [];
 var colors = ['#4575b4', '#91bfdb', '#e0f3f8', '#fee090', '#fc8d59', '#d73027'];
 var statsHash = {};
+var statsHash3WTargeted = {};
+var statsHash3WReached = {};
 var breadcrumbspcode = ['MDG', '', '', ''];
 var breadcrumbs = ['Madagascar', '', '', ''];
 var adm_geoms = [];
@@ -396,7 +398,6 @@ function mergeData(data1, data2, data3) {
             newData.forEach(function (c, i) {
                 c["status"] = status;
             })
-            console.log(newData);
             return newData;
         };
         set1 = transform(data1, "affected");
@@ -416,9 +417,9 @@ function mergeData(data1, data2, data3) {
 function createCharts(data) {
     try {
         var gapChart = dc.rowChart('#gapChart');
-        var admin = dc.rowChart('#gap');
+        var admin = dc.rowChart('#admin');
         var cf = crossfilter(data);
-        console.log(data);
+
         var codeDimension = cf.dimension(function (d) { return d["code"]; });
         var statusDimension = cf.dimension(function (d) { return d["status"]; });
         var varDimension = cf.dimension(function (d) { return d["var"]; });
@@ -435,39 +436,57 @@ function createCharts(data) {
                 return d.mapValue;
             }
         });
+        var codeSum = codeGroup.reduceSum(function (d) {
+            if (isNaN(d.mapValue)) {
+                return 0;
+            } else {
+                return d.mapValue;
+            }
+        });
 
-        gapChart.width(300)
+        gapChart.width($('#gapChart').width())
             .dimension(statusDimension)
             .group(values)
             .elasticX(true)
-            .height(300)
-            //.data(function (group) {
-            //    return group.top(15);
-            //})
+            .height(150)
+            .data(function (group) {
+                return group.top(15);
+            })
             .labelOffsetY(13)
-            .colors(config.colors)
-            .colorDomain([0, 7])
-            .colorAccessor(function (d, i) { return 3; })
+            //.colors(config.colors)
+            //.colorDomain([0, 7])
+            //.colorAccessor(function (d, i) { return 3; })
             .xAxis().ticks(5);
 
-        admin.width(300)
-            .dimension(varDimension)
-            .group(varGroup)
+        admin.width($('#admin').width())
+            .dimension(codeDimension)
+            .group(codeSum)
             .elasticX(true)
-            .height(300)
-            .x(d3
-                .scale.ordinal()                  //calls up D3 to tell it what type of axis it is
-                .domain(["test", "tab", "cash"]))
+            .data(function (group) {
+                return group.top(10);
+            })
+            .height(320)
             .labelOffsetY(13)
-            .colors(config.colors)
-            .colorDomain([0, 7])
-            .colorAccessor(function (d, i) { return 3; })
+            //.colors(config.colors)
+            //.colorDomain([0, 7])
+            //.colorAccessor(function (d, i) { return 3; })
             .xAxis().ticks(5);
 
 
         dc.renderAll();
 
     } catch (e) { console.log("Error generating the chart:", e) }
+}
+
+function filterData(data, code) {
+    var newData = [];
+    data.forEach(function (c, i) {
+        if (c.var === code) {
+            newData.push(c);
+        }
+    })
+    console.log(newData);
+    return newData;
 }
 
 $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(function (dataNeedArgs, data3WArgs, geomadm1Args, geomadm2Args, geomadm3Args) {
@@ -481,9 +500,13 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     statsHash = createStatsHash(data, ['#adm1+code', '#adm2+code', '#adm3+code'], config.affected);
     statsHash3WTargeted = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.targeted);
     statsHash3WReached = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.reached);
-    mergedData = mergeData(statsHash, statsHash3WTargeted, statsHash3WReached);
+    var mergedData = mergeData(statsHash, statsHash3WTargeted, statsHash3WReached);
     initDash();
-    createCharts(mergedData);
+    var dataAdmin1 = filterData(mergedData, "#adm1+code");
+    var dataAdmin2 = filterData(mergedData, "#adm2+code");
+    var dataAdmin3 = filterData(mergedData, "#adm3+code");
+    createCharts(dataAdmin1);
+
     createTable(data, ["Admin1", "Households affected"]);
 
     // Return Top level button
