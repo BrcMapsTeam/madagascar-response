@@ -384,12 +384,46 @@ var geomadm3Call = $.ajax({
 //This function assumes data1 contains all the admin information and merges the data in all the objects
 function mergeData(data1, data2, data3) {
     try {
-
+        //merging data sets 1, 2 and 3
+        Object.keys(data1).forEach(function (c, i) {
+            if (data2[c] !== undefined) {
+                $.extend(data1[c], data2[c]);
+            }
+            if (data3[c] !== undefined) {
+                $.extend(data1[c], data3[c]);
+            }
+        })
+        //putting the data in a crossfilter-friendly format
+        var newData = [];
+        Object.keys(data1).forEach(function (c, i) {
+            newData[i] = {};
+            newData[i]['code']=c;
+            $.extend(newData[i],data1[c]);
+        })
+        return newData;
     } catch (e) { console.log("Couldn't merge the dataset from the sources: ", e)}
 }
 
-function createCharts() {
+function createCharts(data) {
     try {
+        var gapChart = dc.rowChart('#gapCharts');
+        var cf = crossfilter(data);
+        var reachedDimension = cf.dimension(function (d) { return d[config.reached]; });
+        var whoGroup = whoDimension.group();
+        gapChart.width($('#activite').width()).height(150)
+        .dimension(activiteDimension)
+        .group(activiteGroup)
+        .elasticX(true)
+        .height(300)
+        .data(function (group) {
+            return group.top(15);
+        })
+        .labelOffsetY(13)
+        .colors(config.colors)
+        .colorDomain([0, 7])
+        .colorAccessor(function (d, i) { return 3; })
+        .xAxis().ticks(5);
+
     } catch (e) { console.log("Error generating the chart:", e) }
 }
 
@@ -404,10 +438,9 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     statsHash = createStatsHash(data, ['#adm1+code', '#adm2+code', '#adm3+code'], config.affected);
     statsHash3WTargeted = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.targeted);
     statsHash3WReached = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.reached);
-    console.log(statsHash3WTargeted, statsHash3WReached, statsHash);
     mergedData = mergeData(statsHash, statsHash3WTargeted, statsHash3WReached);
     initDash();
-    createCharts();
+    createCharts(mergedData);
     createTable(data, ["Admin1", "Households affected"]);
 
     // Return Top level button
