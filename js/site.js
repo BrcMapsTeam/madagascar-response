@@ -8,7 +8,7 @@ var config = {
 //'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&force=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
 };
 
-
+var noPointsToShow = "<p>Cette r\xE9gion n'a pas \xE9t\xE9 affect\xE9e.</p>";
 var map;
 var info;
 var admlevel = 1;
@@ -67,7 +67,7 @@ function initDash() {
 
     $('.loading').hide();
     $('.dash').show();
-    showCharts();
+    showCharts('');
 
     addGeomToMap(adm_geoms[1]);
 }
@@ -187,6 +187,7 @@ function onEachFeature(feature, layer) {
     var pcodelengths = [3, 5, 8, 11];
     var layerlevel = pcodelengths.indexOf(feature.properties['P_CODE'].length); //admNames[layerlevel]=REGION
     layer.on('click', function (e) {
+        var newGeom;
         if (layerlevel == admlevel) {
             breadcrumbs[admlevel] = feature.properties[admNames[layerlevel]];
             breadcrumbspcode[admlevel] = e.target.feature.properties['P_CODE'];
@@ -200,7 +201,7 @@ function onEachFeature(feature, layer) {
                 });
 
                 admlevel++;
-                var newGeom = filterGeom(adm_geoms[admlevel], e.target.feature.properties['P_CODE'], pcodelengths[admlevel - 1]);
+                newGeom = filterGeom(adm_geoms[admlevel], e.target.feature.properties['P_CODE'], pcodelengths[admlevel - 1]);
                 addGeomToMap(newGeom);
             }
         } else {
@@ -212,12 +213,12 @@ function onEachFeature(feature, layer) {
             breadcrumbs[layerlevel] = e.target.feature.properties[admNames[layerlevel]];
             breadcrumbspcode[layerlevel] = e.target.feature.properties['P_CODE'];
             admlevel = layerlevel + 1;
-            var newGeom = filterGeom(adm_geoms[admlevel], e.target.feature.properties['P_CODE'], pcodelengths[admlevel - 1]);
+            newGeom = filterGeom(adm_geoms[admlevel], e.target.feature.properties['P_CODE'], pcodelengths[admlevel - 1]);
             addGeomToMap(newGeom);
             panel.affected = value;
             panel.breadcrumbs = breadcrumbs;
         }
-        showCharts();
+        showCharts(newGeom.features, layerlevel);
     }); // End layer on click
     panel.breadcrumbspcode = breadcrumbspcode;
     panel.breadcrumbs = breadcrumbs;
@@ -268,9 +269,9 @@ function filterGeom(geom, filter, length) {
         if (f.properties['P_CODE'].substring(0, length) == filter) {
             newFeatures.push(f);
         }
-        console.log(f);
     });
     newgeom.features = newFeatures;
+    console.log(newFeatures);
     return newgeom;
 }
 
@@ -326,7 +327,7 @@ function changeLayer(currentLayer, newLayer) {
     //removing breadcrumbs
     addGeomToMap(newGeom);
 
-    showCharts();
+    showCharts(newGeom.features, admlevel-1);
 }
 
 function createTable(headerNames) {
@@ -430,7 +431,6 @@ function createCharts(data) {
         var numberOfDataPoints = cf.groupAll().reduceCount().value();
 
         if (numberOfDataPoints === 0) {
-            var noPointsToShow = "<p>Cette r\xE9gion n'a pas \xE9t\xE9 affect\xE9e.</p>";
             $('#errorText').html(noPointsToShow);
             return;
         } else {
@@ -507,19 +507,28 @@ function filterData(data, code, variableName) {
 
 
 //function showsCharts depending on admin level
-function showCharts() {
+function showCharts(newGeom, level) {
     var adminName = '';
     breadcrumbs.forEach(function (c, i) {
         if (c !== '') {
             adminName = c;
         };
     })
-
-    if (adminName === 'Madagascar') {
+    if (adminName === 'Madagascar'||newGeom === "") {
         var dataAdminM = filterData(mergedData, '#adm1+name', 'var');
         createCharts(dataAdminM);
     } else {
-        var dataAdmin = filterData(mergedData, adminName, 'code');
+        var tempGeom = [];
+        var dataAdmin = [];
+        newGeom.forEach(function (c, i) {
+            tempGeom[i] = c.properties[admNames[level+1]];
+        })
+        tempGeom.forEach(function (c, i) {
+            filterData(mergedData, c, 'code').forEach(function (c, i) {
+                dataAdmin.push(c);
+            })
+        })
+        console.log(dataAdmin);
         createCharts(dataAdmin);
     }
 }
