@@ -22,7 +22,6 @@ var pcodelengths = [3, 5, 8, 11];
 var admNames = ['Country', 'REGION', 'DISTRICT', 'COMMUNE'];
 
 
-
 // CREATING MAP
 function initDash() {
     map = L.map('hdx-ipc-map', {});
@@ -387,17 +386,6 @@ var geomadm3Call = $.ajax({
 
 function mergeData(data1, data2, data3) {
     try {
-        ////merging data sets 1, 2 and 3
-        //Object.keys(data1).forEach(function (c, i) {
-        //    if (data2[c] !== undefined) {
-        //        $.extend(data1[c], data2[c]);
-        //    }
-        //    if (data3[c] !== undefined) {
-        //        $.extend(data1[c], data3[c]);
-        //    }
-        //})
-        //putting the data in a crossfilter-friendly format
-
         function transform(dataset, status) {
             var newData = [];
             Object.keys(dataset).forEach(function (c, i) {
@@ -434,21 +422,22 @@ function createCharts(data) {
         var codeDimension = cf.dimension(function (d) { return d["code"]; });
         var statusDimension = cf.dimension(function (d) { return d["status"]; });
         var varDimension = cf.dimension(function (d) { return d["var"]; });
+        var valueDimension = cf.dimension(function (d) { return d["mapValue"]; });
 
         var codeGroup = codeDimension.group();
         var statusGroup = statusDimension.group();
         var varGroup = varDimension.group();
 
-        var values = cf.groupAll().reduceSum(function (d) {
-            if (isNaN(d.mapValue)) {
-                return 0;
-            } else {
-                return d.mapValue;
-            }
-        });
+        //var values = valueDimension.reduceSum(function (d) {
+        //    if (isNaN(d.mapValue)) {
+        //        return 0;
+        //    } else {
+        //        return d.mapValue;
+        //    }
+        //});
 
         gapChart.width(300)
-            .dimension(codeDimension)
+            .dimension(statusDimension)
             .group(statusGroup)
             .elasticX(true)
             .height(300)
@@ -462,7 +451,7 @@ function createCharts(data) {
             .xAxis().ticks(5);
 
         admin.width(300)
-            .dimension(codeDimension)
+            .dimension(varDimension)
             .group(varGroup)
             .elasticX(true)
             .height(300)

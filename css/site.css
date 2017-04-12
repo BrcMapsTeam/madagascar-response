@@ -139,3 +139,7 @@ body{
 #dataTable th, #dataTable td{
     width: 15em;
 }
+
+.dc-chart g.row text{
+    fill:black;
+}
