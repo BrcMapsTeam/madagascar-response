@@ -15,6 +15,7 @@ var admlevel = 1;
 var overlays = [];
 var colors = ['#4575b4', '#91bfdb', '#e0f3f8', '#fee090', '#fc8d59', '#d73027'];
 var statsHash = {};
+var statsWithNames = {};
 var statsHash3WTargeted = {};
 var statsHash3WReached = {};
 var breadcrumbspcode = ['MDG', '', '', ''];
@@ -322,9 +323,8 @@ function changeLayer(currentLayer, newLayer) {
     addGeomToMap(newGeom);
 }
 
-function createTable(initData, headerNames) {
+function createTable(headerNames) {
     try {
-        var statsWithNames = createStatsHash(initData, ['#adm1+name', '#adm2+name', '#adm3+name'], config.affected);
         var data = {};
         Object.keys(statsWithNames).forEach(function (c, i) {
             if (statsWithNames[c].var === "#adm1+name") {
@@ -498,16 +498,18 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     //data = "Array of Objects in the following format: array[1] = #sector: "MDG1"
 
     statsHash = createStatsHash(data, ['#adm1+code', '#adm2+code', '#adm3+code'], config.affected);
-    statsHash3WTargeted = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.targeted);
-    statsHash3WReached = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.reached);
-    var mergedData = mergeData(statsHash, statsHash3WTargeted, statsHash3WReached);
+    statsWithNames = createStatsHash(data, ['#adm1+name', '#adm2+name', '#adm3+name'], config.affected);
+    statsHash3WTargeted = createStatsHash(data3w, ['#adm1+name', '#adm2+name', '#adm3+name'], config.targeted);
+    statsHash3WReached = createStatsHash(data3w, ['#adm1+name', '#adm2+name', '#adm3+name'], config.reached);
+    var mergedData = mergeData(statsWithNames, statsHash3WTargeted, statsHash3WReached);
     initDash();
-    var dataAdmin1 = filterData(mergedData, "#adm1+code");
-    var dataAdmin2 = filterData(mergedData, "#adm2+code");
-    var dataAdmin3 = filterData(mergedData, "#adm3+code");
+    console.log("o=", mergedData);
+    var dataAdmin1 = filterData(mergedData, "#adm1+name");
+    var dataAdmin2 = filterData(mergedData, "#adm2+name");
+    var dataAdmin3 = filterData(mergedData, "#adm3+name");
     createCharts(dataAdmin1);
 
-    createTable(data, ["Admin1", "Households affected"]);
+    createTable(["Admin1", "Households affected"]);
 
     // Return Top level button
     $('#reinit').click(function (e) {
