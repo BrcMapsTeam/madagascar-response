@@ -2,6 +2,7 @@ var config = {
     affected: '#affected+households+idps',
     targeted: '#targeted',
     reached: '#reached',
+    colors:['#ef8f8f','#9a181a','#841517','#ef8f8f','#6e1113','#580e0f','#420a0b','#2c0708'],
     dataNeedURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//data.humdata.org/dataset/94b6d7f8-9b6d-4bca-81d7-6abb83edae16/resource/3ed3635b-7cee-4fa1-aec6-6f0318886092/download/Assesment_data_CRM__05April2017.xlsx&strip-headers=on',
     data3WURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0&strip-headers=on&force=on'
 //'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&force=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
@@ -91,7 +92,7 @@ function createStatsHash(data, keys, variable) {
 
         cf.adm1group.top(Infinity).forEach(function (d, i) {
             output[d.key] = {};
-            output[d.key][variable] = d.value;
+            output[d.key].mapValue = d.value;
             output[d.key].var = keys[0];
         });
 
@@ -99,7 +100,7 @@ function createStatsHash(data, keys, variable) {
 
         cf.adm2group.top(Infinity).forEach(function (d, i) {
             output[d.key] = {};
-            output[d.key][variable] = d.value;
+            output[d.key].mapValue = d.value;
             output[d.key].var = keys[1];
         });
 
@@ -107,7 +108,7 @@ function createStatsHash(data, keys, variable) {
 
         cf.adm3group.top(Infinity).forEach(function (d, i) {
             output[d.key] = {};
-            output[d.key][variable] = d.value;
+            output[d.key].mapValue = d.value;
             output[d.key].var = keys[2];
         });
 
@@ -147,7 +148,7 @@ function addGeomToMap(geom) {
 
         var value = 0;
         if (feature.properties['P_CODE'] in statsHash) {
-            var value = statsHash[feature.properties['P_CODE']][config.affected];
+            var value = statsHash[feature.properties['P_CODE']].mapValue;
         }
 
         var color = 0;
@@ -176,7 +177,7 @@ function onEachFeature(feature, layer) {
     var panel = {};
 
     if (feature.properties['P_CODE'] in statsHash) {
-        var value = statsHash[feature.properties['P_CODE']][config.affected];
+        var value = statsHash[feature.properties['P_CODE']].mapValue;
         //console.log("feature.properties['P_CODE']]", statsHash[feature.properties['P_CODE']], feature.properties['P_CODE']);
     }
     var pcodelengths = [3, 5, 8, 11];
@@ -326,7 +327,7 @@ function createTable(initData, headerNames) {
         var data = {};
         Object.keys(statsWithNames).forEach(function (c, i) {
             if (statsWithNames[c].var === "#adm1+name") {
-                data[c] = statsWithNames[c][config.affected];
+                data[c] = statsWithNames[c].mapValue;
             }
         })
         //Creating headers for table
@@ -381,48 +382,101 @@ var geomadm3Call = $.ajax({
     dataType: 'json',
 });
 
-//This function assumes data1 contains all the admin information and merges the data in all the objects
+//This function assumes data1 contains all the admin information 
+//and merges the 3 datasets into a crossfilter friendly format
+
 function mergeData(data1, data2, data3) {
     try {
-        //merging data sets 1, 2 and 3
-        Object.keys(data1).forEach(function (c, i) {
-            if (data2[c] !== undefined) {
-                $.extend(data1[c], data2[c]);
-            }
-            if (data3[c] !== undefined) {
-                $.extend(data1[c], data3[c]);
-            }
-        })
+        ////merging data sets 1, 2 and 3
+        //Object.keys(data1).forEach(function (c, i) {
+        //    if (data2[c] !== undefined) {
+        //        $.extend(data1[c], data2[c]);
+        //    }
+        //    if (data3[c] !== undefined) {
+        //        $.extend(data1[c], data3[c]);
+        //    }
+        //})
         //putting the data in a crossfilter-friendly format
-        var newData = [];
-        Object.keys(data1).forEach(function (c, i) {
-            newData[i] = {};
-            newData[i]['code']=c;
-            $.extend(newData[i],data1[c]);
+
+        function transform(dataset, status) {
+            var newData = [];
+            Object.keys(dataset).forEach(function (c, i) {
+                newData[i] = {};
+                newData[i]['code'] = c;
+                $.extend(newData[i], dataset[c]);
+            })
+            newData.forEach(function (c, i) {
+                c["status"] = status;
+            })
+            console.log(newData);
+            return newData;
+        };
+        set1 = transform(data1, "affected");
+        set2 = transform(data2, "targeted");
+        set3 = transform(data3, "reached");
+        set2.forEach(function (c, i) {
+            set1.push(c);
         })
-        return newData;
+        set3.forEach(function (c, i) {
+            set1.push(c);
+        })
+
+        return set1;
     } catch (e) { console.log("Couldn't merge the dataset from the sources: ", e)}
 }
 
 function createCharts(data) {
     try {
-        var gapChart = dc.rowChart('#gapCharts');
+        var gapChart = dc.rowChart('#gapChart');
+        var admin = dc.rowChart('#gap');
         var cf = crossfilter(data);
-        var reachedDimension = cf.dimension(function (d) { return d[config.reached]; });
-        var whoGroup = whoDimension.group();
-        gapChart.width($('#activite').width()).height(150)
-        .dimension(activiteDimension)
-        .group(activiteGroup)
-        .elasticX(true)
-        .height(300)
-        .data(function (group) {
-            return group.top(15);
-        })
-        .labelOffsetY(13)
-        .colors(config.colors)
-        .colorDomain([0, 7])
-        .colorAccessor(function (d, i) { return 3; })
-        .xAxis().ticks(5);
+        console.log(data);
+        var codeDimension = cf.dimension(function (d) { return d["code"]; });
+        var statusDimension = cf.dimension(function (d) { return d["status"]; });
+        var varDimension = cf.dimension(function (d) { return d["var"]; });
+
+        var codeGroup = codeDimension.group();
+        var statusGroup = statusDimension.group();
+        var varGroup = varDimension.group();
+
+        var values = cf.groupAll().reduceSum(function (d) {
+            if (isNaN(d.mapValue)) {
+                return 0;
+            } else {
+                return d.mapValue;
+            }
+        });
+
+        gapChart.width(300)
+            .dimension(codeDimension)
+            .group(statusGroup)
+            .elasticX(true)
+            .height(300)
+            //.data(function (group) {
+            //    return group.top(15);
+            //})
+            .labelOffsetY(13)
+            .colors(config.colors)
+            .colorDomain([0, 7])
+            .colorAccessor(function (d, i) { return 3; })
+            .xAxis().ticks(5);
+
+        admin.width(300)
+            .dimension(codeDimension)
+            .group(varGroup)
+            .elasticX(true)
+            .height(300)
+            .x(d3
+                .scale.ordinal()                  //calls up D3 to tell it what type of axis it is
+                .domain(["test", "tab", "cash"]))
+            .labelOffsetY(13)
+            .colors(config.colors)
+            .colorDomain([0, 7])
+            .colorAccessor(function (d, i) { return 3; })
+            .xAxis().ticks(5);
+
+
+        dc.renderAll();
 
     } catch (e) { console.log("Error generating the chart:", e) }
 }
