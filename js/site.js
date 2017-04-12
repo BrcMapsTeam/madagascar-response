@@ -1,3 +1,26 @@
+var config = {
+    affected: '#affected+households+idps',
+    targeted: '#targeted',
+    reached: '#reached',
+    dataNeedURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//data.humdata.org/dataset/94b6d7f8-9b6d-4bca-81d7-6abb83edae16/resource/3ed3635b-7cee-4fa1-aec6-6f0318886092/download/Assesment_data_CRM__05April2017.xlsx&strip-headers=on',
+    data3WURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0&strip-headers=on&force=on'
+//'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&force=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
+};
+
+
+var map;
+var info;
+var admlevel = 1;
+var overlays = [];
+var colors = ['#4575b4', '#91bfdb', '#e0f3f8', '#fee090', '#fc8d59', '#d73027'];
+var statsHash = {};
+var breadcrumbspcode = ['MDG', '', '', ''];
+var breadcrumbs = ['Madagascar', '', '', ''];
+var adm_geoms = [];
+var pcodelengths = [3, 5, 8, 11];
+var admNames = ['Country', 'REGION', 'DISTRICT', 'COMMUNE'];
+
+
 
 // CREATING MAP
 function initDash() {
@@ -68,7 +91,7 @@ function createStatsHash(data, keys, variable) {
 
         cf.adm1group.top(Infinity).forEach(function (d, i) {
             output[d.key] = {};
-            output[d.key].affected = d.value;
+            output[d.key][variable] = d.value;
             output[d.key].var = keys[0];
         });
 
@@ -76,7 +99,7 @@ function createStatsHash(data, keys, variable) {
 
         cf.adm2group.top(Infinity).forEach(function (d, i) {
             output[d.key] = {};
-            output[d.key].affected = d.value;
+            output[d.key][variable] = d.value;
             output[d.key].var = keys[1];
         });
 
@@ -84,7 +107,7 @@ function createStatsHash(data, keys, variable) {
 
         cf.adm3group.top(Infinity).forEach(function (d, i) {
             output[d.key] = {};
-            output[d.key].affected = d.value;
+            output[d.key][variable] = d.value;
             output[d.key].var = keys[2];
         });
 
@@ -124,7 +147,7 @@ function addGeomToMap(geom) {
 
         var value = 0;
         if (feature.properties['P_CODE'] in statsHash) {
-            var value = statsHash[feature.properties['P_CODE']].affected;
+            var value = statsHash[feature.properties['P_CODE']][config.affected];
         }
 
         var color = 0;
@@ -153,7 +176,7 @@ function onEachFeature(feature, layer) {
     var panel = {};
 
     if (feature.properties['P_CODE'] in statsHash) {
-        var value = statsHash[feature.properties['P_CODE']].affected;
+        var value = statsHash[feature.properties['P_CODE']][config.affected];
         //console.log("feature.properties['P_CODE']]", statsHash[feature.properties['P_CODE']], feature.properties['P_CODE']);
     }
     var pcodelengths = [3, 5, 8, 11];
@@ -299,11 +322,11 @@ function changeLayer(currentLayer, newLayer) {
 
 function createTable(initData, headerNames) {
     try {
-        var statsWithNames = createStatsHash(initData, ['#adm1+name', '#adm2+name', '#adm3+name'], '#affected+households+idps');
+        var statsWithNames = createStatsHash(initData, ['#adm1+name', '#adm2+name', '#adm3+name'], config.affected);
         var data = {};
         Object.keys(statsWithNames).forEach(function (c, i) {
             if (statsWithNames[c].var === "#adm1+name") {
-                data[c] = statsWithNames[c].affected;
+                data[c] = statsWithNames[c][config.affected];
             }
         })
         //Creating headers for table
@@ -328,34 +351,15 @@ function createTable(initData, headerNames) {
 
 $('.dash').hide();
 
-var map;
-var info;
-var admlevel = 1;
-var overlays = [];
-var data, data3W;
-var colors = ['#4575b4', '#91bfdb', '#e0f3f8', '#fee090', '#fc8d59', '#d73027'];
-var statsHash = {};
-var breadcrumbspcode = ['MDG', '', '', ''];
-var breadcrumbs = ['Madagascar', '', '', ''];
-var adm_geoms = [];
-var pcodelengths = [3, 5, 8, 11];
-
-var admNames = ['Country', 'REGION', 'DISTRICT', 'COMMUNE'];
-
-var dataNeedURL = 'https://proxy.hxlstandard.org/data.json?url=https%3A//data.humdata.org/dataset/94b6d7f8-9b6d-4bca-81d7-6abb83edae16/resource/3ed3635b-7cee-4fa1-aec6-6f0318886092/download/Assesment_data_CRM__05April2017.xlsx&strip-headers=on';
-// change for new data
-var data3WURL = "https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0&strip-headers=on&force=on";
-    //'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&force=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
-
 var dataNeedCall = $.ajax({
     type: 'GET',
-    url: dataNeedURL,
+    url: config.dataNeedURL,
     dataType: 'json',
 });
 
 var data3WCall = $.ajax({
     type: 'GET',
-    url: data3WURL,
+    url: config.data3WURL,
     dataType: 'json',
 });
 
@@ -377,6 +381,18 @@ var geomadm3Call = $.ajax({
     dataType: 'json',
 });
 
+//This function assumes data1 contains all the admin information and merges the data in all the objects
+function mergeData(data1, data2, data3) {
+    try {
+
+    } catch (e) { console.log("Couldn't merge the dataset from the sources: ", e)}
+}
+
+function createCharts() {
+    try {
+    } catch (e) { console.log("Error generating the chart:", e) }
+}
+
 $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(function (dataNeedArgs, data3WArgs, geomadm1Args, geomadm2Args, geomadm3Args) {
     data = hxlProxyToJSON(dataNeedArgs[0]);
     data3w = hxlProxyToJSON(data3WArgs[0]);
@@ -385,11 +401,13 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     adm_geoms[3] = topojson.feature(geomadm3Args[0], geomadm3Args[0].objects.mdg_adm3);
     //data = "Array of Objects in the following format: array[1] = #sector: "MDG1"
 
-    statsHash = createStatsHash(data, ['#adm1+code', '#adm2+code', '#adm3+code'], '#affected+households+idps');
-    statsHash3WTargeted = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], '#targeted');
-    statsHash3WReached = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], '#reached');
+    statsHash = createStatsHash(data, ['#adm1+code', '#adm2+code', '#adm3+code'], config.affected);
+    statsHash3WTargeted = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.targeted);
+    statsHash3WReached = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.reached);
     console.log(statsHash3WTargeted, statsHash3WReached, statsHash);
+    mergedData = mergeData(statsHash, statsHash3WTargeted, statsHash3WReached);
     initDash();
+    createCharts();
     createTable(data, ["Admin1", "Households affected"]);
 
     // Return Top level button
