@@ -67,6 +67,7 @@ function initDash() {
 
     $('.loading').hide();
     $('.dash').show();
+    showCharts();
 
     addGeomToMap(adm_geoms[1]);
 }
@@ -267,6 +268,7 @@ function filterGeom(geom, filter, length) {
         if (f.properties['P_CODE'].substring(0, length) == filter) {
             newFeatures.push(f);
         }
+        console.log(f);
     });
     newgeom.features = newFeatures;
     return newgeom;
@@ -317,7 +319,6 @@ function setBreadcrumbs(currentLayer, newLayer) {
 // Function changes from layer to next layer
 // currentLayer and newLayer are numbers and should be 1: country, 2: admin2 etc.
 function changeLayer(currentLayer, newLayer) {
-    console.log("!");
     map.removeLayer(overlays[currentLayer]);
     admlevel = newLayer;
     setBreadcrumbs(currentLayer, newLayer);
@@ -421,22 +422,25 @@ function mergeData(data1, data2, data3) {
 
 function createCharts(data) {
     try {
-        var gapChart = dc.rowChart('#gapChart');
-        var admin = dc.rowChart('#admin');
+        $('#gapChart').html('');
+        $('#admin').html('');
+        $('#errorText').html('');
         var cf = crossfilter(data);
 
-        var codeDimension = cf.dimension(function (d) { return d["code"]; });
-        var statusDimension = cf.dimension(function (d) { return d["status"]; });
-        var varDimension = cf.dimension(function (d) { return d["var"]; });
-        var valueDimension = cf.dimension(function (d) { return d["mapValue"]; });
         var numberOfDataPoints = cf.groupAll().reduceCount().value();
 
         if (numberOfDataPoints === 0) {
             var noPointsToShow = "<p>Cette r\xE9gion n'a pas \xE9t\xE9 affect\xE9e.</p>";
-            $('#gapChart').html(noPointsToShow);
-            $('#admin').html('');
+            $('#errorText').html(noPointsToShow);
             return;
         } else {
+            var gapChart = dc.rowChart('#gapChart');
+            var admin = dc.rowChart('#admin');
+
+            var codeDimension = cf.dimension(function (d) { return d["code"]; });
+            var statusDimension = cf.dimension(function (d) { return d["status"]; });
+            var varDimension = cf.dimension(function (d) { return d["var"]; });
+            var valueDimension = cf.dimension(function (d) { return d["mapValue"]; });
 
             var codeGroup = codeDimension.group();
             var statusGroup = statusDimension.group();
@@ -484,10 +488,8 @@ function createCharts(data) {
                 //.colorDomain([0, 7])
                 //.colorAccessor(function (d, i) { return 3; })
                 .xAxis().ticks(5);
-
-
-            dc.renderAll();
         }
+        dc.renderAll();
 
     } catch (e) { console.log("Error generating the chart:", e) }
 }
@@ -515,7 +517,6 @@ function showCharts() {
 
     if (adminName === 'Madagascar') {
         var dataAdminM = filterData(mergedData, '#adm1+name', 'var');
-        console.log("d=", mergedData);
         createCharts(dataAdminM);
     } else {
         var dataAdmin = filterData(mergedData, adminName, 'code');
@@ -538,7 +539,6 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     mergedData = mergeData(statsWithNames, statsHash3WTargeted, statsHash3WReached);
     initDash();
     console.log(mergedData);
-    showCharts();
 
     // Return Top level button
     $('#reinit').click(function (e) {
