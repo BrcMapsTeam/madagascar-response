@@ -18,6 +18,7 @@ var statsHash = {};
 var statsWithNames = {};
 var statsHash3WTargeted = {};
 var statsHash3WReached = {};
+var mergedData = [];
 var breadcrumbspcode = ['MDG', '', '', ''];
 var breadcrumbs = ['Madagascar', '', '', ''];
 var adm_geoms = [];
@@ -215,6 +216,7 @@ function onEachFeature(feature, layer) {
             panel.affected = value;
             panel.breadcrumbs = breadcrumbs;
         }
+        showCharts();
     }); // End layer on click
     panel.breadcrumbspcode = breadcrumbspcode;
     panel.breadcrumbs = breadcrumbs;
@@ -315,12 +317,15 @@ function setBreadcrumbs(currentLayer, newLayer) {
 // Function changes from layer to next layer
 // currentLayer and newLayer are numbers and should be 1: country, 2: admin2 etc.
 function changeLayer(currentLayer, newLayer) {
+    console.log("!");
     map.removeLayer(overlays[currentLayer]);
     admlevel = newLayer;
     setBreadcrumbs(currentLayer, newLayer);
     var newGeom = filterGeom(adm_geoms[newLayer], breadcrumbspcode[newLayer-1], pcodelengths[newLayer-1]);
     //removing breadcrumbs
     addGeomToMap(newGeom);
+
+    showCharts();
 }
 
 function createTable(headerNames) {
@@ -478,15 +483,35 @@ function createCharts(data) {
     } catch (e) { console.log("Error generating the chart:", e) }
 }
 
-function filterData(data, code) {
+function filterData(data, code, variableName) {
     var newData = [];
     data.forEach(function (c, i) {
-        if (c.var === code) {
+        if (c[variableName] === code) {
             newData.push(c);
         }
     })
-    console.log(newData);
+    //console.log(newData);
     return newData;
+}
+
+
+//function showsCharts depending on admin level
+function showCharts() {
+    var adminName = '';
+    breadcrumbs.forEach(function (c, i) {
+        if (c !== '') {
+            adminName = c;
+        };
+    })
+
+    if (adminName === 'Madagascar') {
+        var dataAdminM = filterData(mergedData, '#adm1+name', 'var');
+        console.log("d=", mergedData);
+        createCharts(dataAdminM);
+    } else {
+        var dataAdmin = filterData(mergedData, adminName, 'code');
+        createCharts(dataAdmin);
+    }
 }
 
 $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(function (dataNeedArgs, data3WArgs, geomadm1Args, geomadm2Args, geomadm3Args) {
@@ -501,15 +526,15 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     statsWithNames = createStatsHash(data, ['#adm1+name', '#adm2+name', '#adm3+name'], config.affected);
     statsHash3WTargeted = createStatsHash(data3w, ['#adm1+name', '#adm2+name', '#adm3+name'], config.targeted);
     statsHash3WReached = createStatsHash(data3w, ['#adm1+name', '#adm2+name', '#adm3+name'], config.reached);
-    var mergedData = mergeData(statsWithNames, statsHash3WTargeted, statsHash3WReached);
+    mergedData = mergeData(statsWithNames, statsHash3WTargeted, statsHash3WReached);
     initDash();
-    console.log("o=", mergedData);
-    var dataAdmin1 = filterData(mergedData, "#adm1+name");
-    var dataAdmin2 = filterData(mergedData, "#adm2+name");
-    var dataAdmin3 = filterData(mergedData, "#adm3+name");
-    createCharts(dataAdmin1);
+    console.log(mergedData);
+    //var dataAdmin1 = filterData(mergedData, "#adm1+name");
+    //var dataAdmin2 = filterData(mergedData, "#adm2+name");
+    //var dataAdmin3 = filterData(mergedData, "#adm3+name");
+    //createCharts(dataAdmin1);
 
-    createTable(["Admin1", "Households affected"]);
+    //createTable(["Admin1", "Households affected"]);
 
     // Return Top level button
     $('#reinit').click(function (e) {
