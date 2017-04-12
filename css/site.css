@@ -147,3 +147,7 @@ body{
 #gapChart, #admin{
     width:100%;
 }
+
+#gapChart p{
+    padding-top: 50px;
+}

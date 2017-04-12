@@ -429,56 +429,65 @@ function createCharts(data) {
         var statusDimension = cf.dimension(function (d) { return d["status"]; });
         var varDimension = cf.dimension(function (d) { return d["var"]; });
         var valueDimension = cf.dimension(function (d) { return d["mapValue"]; });
+        var numberOfDataPoints = cf.groupAll().reduceCount().value();
 
-        var codeGroup = codeDimension.group();
-        var statusGroup = statusDimension.group();
-        var varGroup = varDimension.group();
+        if (numberOfDataPoints === 0) {
+            var noPointsToShow = "<p>Cette r\xE9gion n'a pas \xE9t\xE9 affect\xE9e.</p>";
+            $('#gapChart').html(noPointsToShow);
+            $('#admin').html('');
+            return;
+        } else {
 
-        var values = statusGroup.reduceSum(function (d) {
-            if (isNaN(d.mapValue)) {
-                return 0;
-            } else {
-                return d.mapValue;
-            }
-        });
-        var codeSum = codeGroup.reduceSum(function (d) {
-            if (isNaN(d.mapValue)) {
-                return 0;
-            } else {
-                return d.mapValue;
-            }
-        });
+            var codeGroup = codeDimension.group();
+            var statusGroup = statusDimension.group();
+            var varGroup = varDimension.group();
 
-        gapChart.width($('#gapChart').width())
-            .dimension(statusDimension)
-            .group(values)
-            .elasticX(true)
-            .height(150)
-            .data(function (group) {
-                return group.top(15);
-            })
-            .labelOffsetY(13)
-            //.colors(config.colors)
-            //.colorDomain([0, 7])
-            //.colorAccessor(function (d, i) { return 3; })
-            .xAxis().ticks(5);
+            var values = statusGroup.reduceSum(function (d) {
+                if (isNaN(d.mapValue)) {
+                    return 0;
+                } else {
+                    return d.mapValue;
+                }
+            });
+            var codeSum = codeGroup.reduceSum(function (d) {
+                if (isNaN(d.mapValue)) {
+                    return 0;
+                } else {
+                    return d.mapValue;
+                }
+            });
 
-        admin.width($('#admin').width())
-            .dimension(codeDimension)
-            .group(codeSum)
-            .elasticX(true)
-            .data(function (group) {
-                return group.top(10);
-            })
-            .height(320)
-            .labelOffsetY(13)
-            //.colors(config.colors)
-            //.colorDomain([0, 7])
-            //.colorAccessor(function (d, i) { return 3; })
-            .xAxis().ticks(5);
+            gapChart.width($('#gapChart').width())
+                .dimension(statusDimension)
+                .group(values)
+                .elasticX(true)
+                .height(150)
+                .data(function (group) {
+                    return group.top(15);
+                })
+                .labelOffsetY(13)
+                //.colors(config.colors)
+                //.colorDomain([0, 7])
+                //.colorAccessor(function (d, i) { return 3; })
+                .xAxis().ticks(5);
+
+            admin.width($('#admin').width())
+                .dimension(codeDimension)
+                .group(codeSum)
+                .elasticX(true)
+                .data(function (group) {
+                    return group.top(10);
+                })
+                .height(320)
+                .labelOffsetY(13)
+                //.colors(config.colors)
+                //.colorDomain([0, 7])
+                //.colorAccessor(function (d, i) { return 3; })
+                .xAxis().ticks(5);
 
 
-        dc.renderAll();
+            dc.renderAll();
+        }
 
     } catch (e) { console.log("Error generating the chart:", e) }
 }
