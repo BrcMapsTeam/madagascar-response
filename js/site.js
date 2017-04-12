@@ -529,12 +529,7 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     mergedData = mergeData(statsWithNames, statsHash3WTargeted, statsHash3WReached);
     initDash();
     console.log(mergedData);
-    //var dataAdmin1 = filterData(mergedData, "#adm1+name");
-    //var dataAdmin2 = filterData(mergedData, "#adm2+name");
-    //var dataAdmin3 = filterData(mergedData, "#adm3+name");
-    //createCharts(dataAdmin1);
-
-    //createTable(["Admin1", "Households affected"]);
+    showCharts();
 
     // Return Top level button
     $('#reinit').click(function (e) {
