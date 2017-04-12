@@ -491,6 +491,24 @@ function createCharts(data) {
         }
         dc.renderAll();
 
+        var g = d3.selectAll('#admin').select('svg').append('g');
+
+        g.append('text')
+            .attr('class', 'x-axis-label')
+            .attr('text-anchor', 'middle')
+            .attr('x', $('#admin').width() / 2)
+            .attr('y', 320)
+            .text('Affected Households');
+
+        var g1 = d3.selectAll('#gapChart').select('svg').append('g');
+
+        g1.append('text')
+            .attr('class', 'x-axis-label')
+            .attr('text-anchor', 'middle')
+            .attr('x', $('#gapChart').width() / 2)
+            .attr('y', 150)
+            .text('Households');
+
     } catch (e) { console.log("Error generating the chart:", e) }
 }
 

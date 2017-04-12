@@ -146,6 +146,7 @@ body{
 
 #gapChart, #admin{
     width:100%;
+    font-size:10px;
 }
 
 #errorText p{
