@@ -271,7 +271,6 @@ function filterGeom(geom, filter, length) {
         }
     });
     newgeom.features = newFeatures;
-    console.log(newFeatures);
     return newgeom;
 }
 
@@ -428,9 +427,12 @@ function createCharts(data) {
         $('#errorText').html('');
         var cf = crossfilter(data);
 
-        var numberOfDataPoints = cf.groupAll().reduceCount().value();
+        var sum = 0;
+        data.forEach(function (c, i) { sum += parseInt(c.mapValue);});
 
-        if (numberOfDataPoints === 0) {
+        var numberOfDataPoints = cf.groupAll().reduceCount().value();
+        console.log("dataP=", numberOfDataPoints, "data=", sum);
+        if (numberOfDataPoints === 0 || sum === 0) {
             $('#errorText').html(noPointsToShow);
             return;
         } else {
