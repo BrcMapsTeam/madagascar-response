@@ -182,7 +182,6 @@ function onEachFeature(feature, layer) {
 
     if (feature.properties['P_CODE'] in statsHash) {
         var value = statsHash[feature.properties['P_CODE']].mapValue;
-        //console.log("feature.properties['P_CODE']]", statsHash[feature.properties['P_CODE']], feature.properties['P_CODE']);
     }
     var pcodelengths = [3, 5, 8, 11];
     var layerlevel = pcodelengths.indexOf(feature.properties['P_CODE'].length); //admNames[layerlevel]=REGION
@@ -218,7 +217,9 @@ function onEachFeature(feature, layer) {
             panel.affected = value;
             panel.breadcrumbs = breadcrumbs;
         }
-        showCharts(newGeom.features, layerlevel);
+        if (newGeom !== undefined) {
+            showCharts(newGeom.features, layerlevel);
+        }
     }); // End layer on click
     panel.breadcrumbspcode = breadcrumbspcode;
     panel.breadcrumbs = breadcrumbs;
@@ -238,7 +239,6 @@ function onEachFeature(feature, layer) {
 // Adding data on side panel, including breadcrumbs, and making breadcrumbs clickable
 
 function populateInfoPanel(data) {
-    //console.log(data);
     //var affected = statsHash[data.breadcrumbspcode[0]].affected;
     //$('#panel-data').html("Total affected in this area: " + affected);
     breadcrumbs.forEach(function (c, i) {
@@ -431,7 +431,7 @@ function createCharts(data) {
         data.forEach(function (c, i) { sum += parseInt(c.mapValue);});
 
         var numberOfDataPoints = cf.groupAll().reduceCount().value();
-        console.log("dataP=", numberOfDataPoints, "data=", sum);
+
         if (numberOfDataPoints === 0 || sum === 0) {
             $('#errorText').html(noPointsToShow);
             return;
@@ -521,7 +521,6 @@ function filterData(data, code, variableName) {
             newData.push(c);
         }
     })
-    //console.log(newData);
     return newData;
 }
 
@@ -548,7 +547,6 @@ function showCharts(newGeom, level) {
                 dataAdmin.push(c);
             })
         })
-        console.log(dataAdmin);
         createCharts(dataAdmin);
     }
 }
@@ -567,7 +565,6 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     statsHash3WReached = createStatsHash(data3w, ['#adm1+name', '#adm2+name', '#adm3+name'], config.reached);
     mergedData = mergeData(statsWithNames, statsHash3WTargeted, statsHash3WReached);
     initDash();
-    console.log(mergedData);
 
     // Return Top level button
     $('#reinit').click(function (e) {
