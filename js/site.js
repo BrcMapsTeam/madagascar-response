@@ -439,10 +439,26 @@ function createCharts(data) {
             var gapChart = dc.rowChart('#gapChart');
             var admin = dc.rowChart('#admin');
 
+            var codeDimension = cf.dimension(function (d) { return d["code"]; })
             var statusDimension = cf.dimension(function (d) { return d["status"]; });
             var varDimension = cf.dimension(function (d) { return d["var"]; });
             var valueDimension = cf.dimension(function (d) { return d["mapValue"]; });
 
+            //Filtering for affected only for second graph
+            function reduceAdd(p, c) { //p is transient instance, c is current value
+                if (c.status === "affected") { return p + c.mapValue; }
+                else { return p + 0;}
+            };
+            function reduceRemove(p, c) {
+                if (c.status === "affected") { return p - c.mapValue; }
+                else { return p - 0; }
+            };
+            function reduceInitial() {
+                return 0;
+            };
+
+            //affectedGroup: groups up each code (admin region) by affected number
+            var affectedGroup = codeDimension.group().reduce(reduceAdd, reduceRemove, reduceInitial);
             var statusGroup = statusDimension.group();
             var varGroup = varDimension.group();
 
@@ -468,27 +484,9 @@ function createCharts(data) {
                 //.colorAccessor(function (d, i) { return 3; })
                 .xAxis().ticks(5);
 
-            //filtering data to show only affected households
-            adminData = [];
-            data.forEach(function (c, i) {
-                if (c.status === "affected") {
-                    adminData.push(c);
-                }
-            })
-            cfAdmin = crossfilter(adminData);
-            var codeDimensionAdm = cfAdmin.dimension(function (d) { return d["code"]; });
-            var codeGroupAdm = codeDimensionAdm.group();
-            var codeSumAdm = codeGroupAdm.reduceSum(function (d) {
-                if (isNaN(d.mapValue)) {
-                    return 0;
-                } else {
-                    return d.mapValue;
-                }
-            });
-
             admin.width($('#admin').width())
-                .dimension(codeDimensionAdm)
-                .group(codeSumAdm)
+                .dimension(codeDimension)
+                .group(affectedGroup)
                 .elasticX(true)
                 .data(function (group) {
                     return group.top(10);
@@ -499,7 +497,7 @@ function createCharts(data) {
                 //.colors(config.colors)
                 //.colorDomain([0, 7])
             //.colorAccessor(function (d, i) { return 3; })
-            
+
         }
 
         dc.renderAll();
