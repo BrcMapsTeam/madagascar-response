@@ -2,10 +2,10 @@ var config = {
     affected: '#affected+households+idps',
     targeted: '#targeted',
     reached: '#reached',
-    colors:['#ef8f8f','#9a181a','#841517','#ef8f8f','#6e1113','#580e0f','#420a0b','#2c0708'],
+    colors:['#4575b4', '#91bfdb', '#e0f3f8', '#fee090', '#fc8d59', '#d73027'],
     dataNeedURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//data.humdata.org/dataset/94b6d7f8-9b6d-4bca-81d7-6abb83edae16/resource/3ed3635b-7cee-4fa1-aec6-6f0318886092/download/Assesment_data_CRM__05April2017.xlsx&strip-headers=on',
-    data3WURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0&strip-headers=on&force=on'
-//'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&force=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
+    data3WURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0&strip-headers=on'
+//'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
 };
 
 var noPointsToShow = "<p>Cette r\xE9gion n'a pas \xE9t\xE9 affect\xE9e.</p>";
@@ -182,7 +182,6 @@ function onEachFeature(feature, layer) {
 
     if (feature.properties['P_CODE'] in statsHash) {
         var value = statsHash[feature.properties['P_CODE']].mapValue;
-        //console.log("feature.properties['P_CODE']]", statsHash[feature.properties['P_CODE']], feature.properties['P_CODE']);
     }
     var pcodelengths = [3, 5, 8, 11];
     var layerlevel = pcodelengths.indexOf(feature.properties['P_CODE'].length); //admNames[layerlevel]=REGION
@@ -218,7 +217,9 @@ function onEachFeature(feature, layer) {
             panel.affected = value;
             panel.breadcrumbs = breadcrumbs;
         }
-        showCharts(newGeom.features, layerlevel);
+        if (newGeom !== undefined) {
+            showCharts(newGeom.features, layerlevel);
+        }
     }); // End layer on click
     panel.breadcrumbspcode = breadcrumbspcode;
     panel.breadcrumbs = breadcrumbs;
@@ -238,7 +239,6 @@ function onEachFeature(feature, layer) {
 // Adding data on side panel, including breadcrumbs, and making breadcrumbs clickable
 
 function populateInfoPanel(data) {
-    //console.log(data);
     //var affected = statsHash[data.breadcrumbspcode[0]].affected;
     //$('#panel-data').html("Total affected in this area: " + affected);
     breadcrumbs.forEach(function (c, i) {
@@ -271,7 +271,6 @@ function filterGeom(geom, filter, length) {
         }
     });
     newgeom.features = newFeatures;
-    console.log(newFeatures);
     return newgeom;
 }
 
@@ -426,34 +425,44 @@ function createCharts(data) {
         $('#gapChart').html('');
         $('#admin').html('');
         $('#errorText').html('');
+
         var cf = crossfilter(data);
+        var sum = 0;
+        data.forEach(function (c, i) { sum += parseInt(c.mapValue);});
 
         var numberOfDataPoints = cf.groupAll().reduceCount().value();
 
-        if (numberOfDataPoints === 0) {
+        if (numberOfDataPoints === 0 || sum === 0) {
             $('#errorText').html(noPointsToShow);
             return;
         } else {
             var gapChart = dc.rowChart('#gapChart');
             var admin = dc.rowChart('#admin');
 
-            var codeDimension = cf.dimension(function (d) { return d["code"]; });
+            var codeDimension = cf.dimension(function (d) { return d["code"]; })
             var statusDimension = cf.dimension(function (d) { return d["status"]; });
             var varDimension = cf.dimension(function (d) { return d["var"]; });
             var valueDimension = cf.dimension(function (d) { return d["mapValue"]; });
 
-            var codeGroup = codeDimension.group();
+            //Filtering for affected only for second graph
+            function reduceAdd(p, c) { //p is transient instance, c is current value
+                if (c.status === "affected") { return p + c.mapValue; }
+                else { return p + 0;}
+            };
+            function reduceRemove(p, c) {
+                if (c.status === "affected") { return p - c.mapValue; }
+                else { return p - 0; }
+            };
+            function reduceInitial() {
+                return 0;
+            };
+
+            //affectedGroup: groups up each code (admin region) by affected number
+            var affectedGroup = codeDimension.group().reduce(reduceAdd, reduceRemove, reduceInitial);
             var statusGroup = statusDimension.group();
             var varGroup = varDimension.group();
 
             var values = statusGroup.reduceSum(function (d) {
-                if (isNaN(d.mapValue)) {
-                    return 0;
-                } else {
-                    return d.mapValue;
-                }
-            });
-            var codeSum = codeGroup.reduceSum(function (d) {
                 if (isNaN(d.mapValue)) {
                     return 0;
                 } else {
@@ -475,20 +484,29 @@ function createCharts(data) {
                 //.colorAccessor(function (d, i) { return 3; })
                 .xAxis().ticks(5);
 
+            var max = 100;
             admin.width($('#admin').width())
                 .dimension(codeDimension)
-                .group(codeSum)
+                .group(affectedGroup)
                 .elasticX(true)
                 .data(function (group) {
                     return group.top(10);
                 })
                 .height(320)
+                .colors(d3.scale.quantize().range(config.colors))//config.colors)
+                .colorDomain([0, max])        //legend: [0, 10, 100, 500, 5000, 10000]
+                .colorAccessor(function (d, i) {
+                    if (parseInt(d.value) < 10) { return (max/config.colors.length-1); }
+                    else if (d.value < 100) { return ((max / config.colors.length * 2) - 1); }
+                    else if (d.value < 500) { return ((max / config.colors.length * 3) - 1); }
+                    else if (d.value < 5000) { return ((max / config.colors.length * 4) - 1); }
+                    else if (d.value < 10000) { return ((max / config.colors.length * 5) - 1); }
+                    else { return (max-1);}
+                })
                 .labelOffsetY(13)
-                //.colors(config.colors)
-                //.colorDomain([0, 7])
-                //.colorAccessor(function (d, i) { return 3; })
-                .xAxis().ticks(5);
+                .xAxis().ticks(10);
         }
+
         dc.renderAll();
 
         var g = d3.selectAll('#admin').select('svg').append('g');
@@ -519,7 +537,6 @@ function filterData(data, code, variableName) {
             newData.push(c);
         }
     })
-    //console.log(newData);
     return newData;
 }
 
@@ -546,7 +563,6 @@ function showCharts(newGeom, level) {
                 dataAdmin.push(c);
             })
         })
-        console.log(dataAdmin);
         createCharts(dataAdmin);
     }
 }
@@ -565,7 +581,6 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     statsHash3WReached = createStatsHash(data3w, ['#adm1+name', '#adm2+name', '#adm3+name'], config.reached);
     mergedData = mergeData(statsWithNames, statsHash3WTargeted, statsHash3WReached);
     initDash();
-    console.log(mergedData);
 
     // Return Top level button
     $('#reinit').click(function (e) {
@@ -578,3 +593,12 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
         else { }
     });
 });
+
+////REMOVE ME
+function print_filter(filter) {
+    'use strict';
+    var f = eval(filter);
+    if (typeof (f.top) != "undefined") { f = f.top(Infinity); }
+    if (typeof (f.dimension) != "undefined") { f = f.dimension(function (d) { return ""; }).top(Infinity); }
+    console.log(filter + "(" + f.length + ") = " + JSON.stringify(f).replace("[", "[\n\t").replace(/}\,/g, "},\n\t").replace("]", "\n]"));
+}
