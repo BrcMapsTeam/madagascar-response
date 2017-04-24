@@ -4,8 +4,8 @@ var config = {
     reached: '#reached',
     colors:['#ef8f8f','#9a181a','#841517','#ef8f8f','#6e1113','#580e0f','#420a0b','#2c0708'],
     dataNeedURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//data.humdata.org/dataset/94b6d7f8-9b6d-4bca-81d7-6abb83edae16/resource/3ed3635b-7cee-4fa1-aec6-6f0318886092/download/Assesment_data_CRM__05April2017.xlsx&strip-headers=on',
-    data3WURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0&strip-headers=on&force=on'
-//'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&force=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
+    data3WURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0&strip-headers=on'
+//'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
 };
 
 var noPointsToShow = "<p>Cette r\xE9gion n'a pas \xE9t\xE9 affect\xE9e.</p>";
@@ -425,8 +425,8 @@ function createCharts(data) {
         $('#gapChart').html('');
         $('#admin').html('');
         $('#errorText').html('');
-        var cf = crossfilter(data);
 
+        var cf = crossfilter(data);
         var sum = 0;
         data.forEach(function (c, i) { sum += parseInt(c.mapValue);});
 
@@ -439,23 +439,14 @@ function createCharts(data) {
             var gapChart = dc.rowChart('#gapChart');
             var admin = dc.rowChart('#admin');
 
-            var codeDimension = cf.dimension(function (d) { return d["code"]; });
             var statusDimension = cf.dimension(function (d) { return d["status"]; });
             var varDimension = cf.dimension(function (d) { return d["var"]; });
             var valueDimension = cf.dimension(function (d) { return d["mapValue"]; });
 
-            var codeGroup = codeDimension.group();
             var statusGroup = statusDimension.group();
             var varGroup = varDimension.group();
 
             var values = statusGroup.reduceSum(function (d) {
-                if (isNaN(d.mapValue)) {
-                    return 0;
-                } else {
-                    return d.mapValue;
-                }
-            });
-            var codeSum = codeGroup.reduceSum(function (d) {
                 if (isNaN(d.mapValue)) {
                     return 0;
                 } else {
@@ -477,20 +468,40 @@ function createCharts(data) {
                 //.colorAccessor(function (d, i) { return 3; })
                 .xAxis().ticks(5);
 
+            //filtering data to show only affected households
+            adminData = [];
+            data.forEach(function (c, i) {
+                if (c.status === "affected") {
+                    adminData.push(c);
+                }
+            })
+            cfAdmin = crossfilter(adminData);
+            var codeDimensionAdm = cfAdmin.dimension(function (d) { return d["code"]; });
+            var codeGroupAdm = codeDimensionAdm.group();
+            var codeSumAdm = codeGroupAdm.reduceSum(function (d) {
+                if (isNaN(d.mapValue)) {
+                    return 0;
+                } else {
+                    return d.mapValue;
+                }
+            });
+
             admin.width($('#admin').width())
-                .dimension(codeDimension)
-                .group(codeSum)
+                .dimension(codeDimensionAdm)
+                .group(codeSumAdm)
                 .elasticX(true)
                 .data(function (group) {
                     return group.top(10);
                 })
                 .height(320)
                 .labelOffsetY(13)
+                .xAxis().ticks(10);
                 //.colors(config.colors)
                 //.colorDomain([0, 7])
-                //.colorAccessor(function (d, i) { return 3; })
-                .xAxis().ticks(5);
+            //.colorAccessor(function (d, i) { return 3; })
+            
         }
+
         dc.renderAll();
 
         var g = d3.selectAll('#admin').select('svg').append('g');
@@ -577,3 +588,12 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
         else { }
     });
 });
+
+////REMOVE ME
+function print_filter(filter) {
+    'use strict';
+    var f = eval(filter);
+    if (typeof (f.top) != "undefined") { f = f.top(Infinity); }
+    if (typeof (f.dimension) != "undefined") { f = f.dimension(function (d) { return ""; }).top(Infinity); }
+    console.log(filter + "(" + f.length + ") = " + JSON.stringify(f).replace("[", "[\n\t").replace(/}\,/g, "},\n\t").replace("]", "\n]"));
+}
