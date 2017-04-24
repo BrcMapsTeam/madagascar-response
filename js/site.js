@@ -2,7 +2,7 @@ var config = {
     affected: '#affected+households+idps',
     targeted: '#targeted',
     reached: '#reached',
-    colors:['#ef8f8f','#9a181a','#841517','#ef8f8f','#6e1113','#580e0f','#420a0b','#2c0708'],
+    colors:['#4575b4', '#91bfdb', '#e0f3f8', '#fee090', '#fc8d59', '#d73027'],
     dataNeedURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//data.humdata.org/dataset/94b6d7f8-9b6d-4bca-81d7-6abb83edae16/resource/3ed3635b-7cee-4fa1-aec6-6f0318886092/download/Assesment_data_CRM__05April2017.xlsx&strip-headers=on',
     data3WURL: 'https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0&strip-headers=on'
 //'https://proxy.hxlstandard.org/data.json?select-query01-01=%23org%3DCRM&filter01=select&strip-headers=on&url=https%3A//docs.google.com/spreadsheets/d/1eJjAvrAMFLpO3TcXZYcXXc-_HVuHLL-iQUULV60lr1g/edit%23gid%3D0';
@@ -484,6 +484,7 @@ function createCharts(data) {
                 //.colorAccessor(function (d, i) { return 3; })
                 .xAxis().ticks(5);
 
+            var max = 100;
             admin.width($('#admin').width())
                 .dimension(codeDimension)
                 .group(affectedGroup)
@@ -492,12 +493,18 @@ function createCharts(data) {
                     return group.top(10);
                 })
                 .height(320)
+                .colors(d3.scale.quantize().range(config.colors))//config.colors)
+                .colorDomain([0, max])        //legend: [0, 10, 100, 500, 5000, 10000]
+                .colorAccessor(function (d, i) {
+                    if (parseInt(d.value) < 10) { return (max/config.colors.length-1); }
+                    else if (d.value < 100) { return ((max / config.colors.length * 2) - 1); }
+                    else if (d.value < 500) { return ((max / config.colors.length * 3) - 1); }
+                    else if (d.value < 5000) { return ((max / config.colors.length * 4) - 1); }
+                    else if (d.value < 10000) { return ((max / config.colors.length * 5) - 1); }
+                    else { return (max-1);}
+                })
                 .labelOffsetY(13)
                 .xAxis().ticks(10);
-                //.colors(config.colors)
-                //.colorDomain([0, 7])
-            //.colorAccessor(function (d, i) { return 3; })
-
         }
 
         dc.renderAll();
