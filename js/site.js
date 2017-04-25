@@ -97,12 +97,12 @@ function createStatsHash(data, keys, variable) {
 
         function reduceAdd(p, c) { //p is transient instance, c is current value
             p.value = p.value + parseInt(reduceSumVar(c));
-            p.name = c[admin[index]];
+            p.name = c[admin[index]].trim();
             return p;
         };
         function reduceRemove(p, c) {
             p.value = p.value - parseInt(reduceSumVar(c));
-            p.name = c[admin[index]];
+            p.name = c[admin[index]].trim();
             return p;
         };
         function reduceInitial() {
@@ -580,6 +580,7 @@ function showCharts(newGeom, level) {
 
         var adminCode = '#adm' + (level + 1) + '+code';
         var reducedData = filterData(mergedData, adminCode, 'var');
+        console.log(reducedData);
         tempGeom.forEach(function (c, i) {
             filterData(reducedData, c, 'name').forEach(function (c, i) {
                 dataAdmin.push(c);
