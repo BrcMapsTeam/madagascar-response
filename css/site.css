@@ -98,14 +98,16 @@ body{
 }
 
 /*----------Data Table-------------*/
+.nav{
+    margin: 2em;
+}
 
 #dataTable{
-    margin-top:3em;
     text-align:center;
     border-collapse: collapse;
-    display: -webkit-box;  /* OLD - iOS 6-, Safari 3.1-6, BB7 */
-    display: -ms-flexbox;  /* TWEENER - IE 10 */
-    display: -webkit-flex; /* NEW - Safari 6.1+. iOS 7.1+, BB10 */
+    /*display: -webkit-box;  /* OLD - iOS 6-, Safari 3.1-6, BB7 */
+    /*display: -ms-flexbox;  /* TWEENER - IE 10 */
+    /*display: -webkit-flex; /* NEW - Safari 6.1+. iOS 7.1+, BB10 */*/
     /*display: flex;*/         /* NEW, Spec - Firefox, Chrome, Opera */
     justify-content:space-around;
 }
@@ -121,11 +123,13 @@ body{
     text-align:center;
     padding: 20px;
     font-weight:200;
-    font-size: 1.4em;
+    font-size: 1em;
     font-family: Calibri, sans-serif;
+    background-color: #3973ac;
+    border: 	#e6e6e6 solid 1px;
 }
 
-#dataTable th:nth-child(even){
+/*#dataTable th:nth-child(even){
     border: #3973ac solid 1px;
     background-color:#3973ac;
 }
@@ -133,7 +137,7 @@ body{
 #dataTable th:nth-child(odd){
     border: 	#304050 solid 1px;
     background-color:	#304050;
-}
+}*/
 
 
 #dataTable th, #dataTable td{

@@ -256,11 +256,9 @@ function populateInfoPanel(data) {
     breadcrumbs.forEach(function (c, i) {
         if (i == 0) {
             $('#panel-breadcrumbs').html('<span id="bc' + i + '" class="hover-link">' + c + '</span>');
-            $('#dataTable').css({ "display": "flex" });
         } else {
             if (c !== '') {
                 $('#panel-breadcrumbs').append(' > <span id="bc' + i + '"class="hover-link">' + c + '</span>');
-                $('#dataTable').css({ "display": "none" });
             }
             else {
                 $("#bc" + i).remove();
@@ -363,7 +361,7 @@ function createTable(headerNames) {
                 tableRows = tableRows.concat("<tr><td>" + c + "</td>" + "<td>" + data[c] + "</td></tr>");
         })
         tableRows = tableRows.concat("</tbody>");
-
+        console.log("test");
         //Adding table to code
         $("#dataTable").html(headers + tableRows);
     } catch (e) { console.log("Error creating the table: ", e.message) }
@@ -439,6 +437,7 @@ function createCharts(data) {
         $('#gapChart').html('');
         $('#admin').html('');
         $('#errorText').html('');
+        $("#dataTable").html('');
 
         var cf = crossfilter(data);
         var sum = 0;
@@ -520,7 +519,23 @@ function createCharts(data) {
                     else { return (max-1);}
                 })
                 .labelOffsetY(13)
-                .xAxis().ticks(10);
+                .xAxis().ticks(5);
+
+
+            try {
+                var dataTable = dc.dataTable("#dataTable")
+                .width(1700)
+                .height(400)
+                .dimension(statusDimension)
+                .size(100) //change me if there are more than 100 lines in the table!!
+                .group(function (a) {
+                    return a.status;
+                })
+                .columns(["name", "mapValue"])
+                .sortBy(function (a) { return a["name"]; })
+                .order(d3.descending)
+                .transitionDelay([1000]);
+            } catch (e) { console.log("Error creating the table: ", e.message) }
         }
 
         dc.renderAll();
@@ -580,7 +595,7 @@ function showCharts(newGeom, level) {
 
         var adminCode = '#adm' + (level + 1) + '+code';
         var reducedData = filterData(mergedData, adminCode, 'var');
-        console.log(reducedData);
+
         tempGeom.forEach(function (c, i) {
             filterData(reducedData, c, 'name').forEach(function (c, i) {
                 dataAdmin.push(c);
