@@ -531,7 +531,7 @@ function createCharts(data) {
                 .group(function (a) {
                     return a.status;
                 })
-                .columns(["name", "mapValue"])
+                .columns([{ label: "Admin", format: function (a) { return a["name"] } }, { label: "Number", format: function (a) { return a["mapValue"] } }])
                 .sortBy(function (a) { return a["name"]; })
                 .order(d3.descending)
                 .transitionDelay([1000]);
