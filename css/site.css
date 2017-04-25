@@ -110,23 +110,25 @@ body{
     /*display: -webkit-flex; /* NEW - Safari 6.1+. iOS 7.1+, BB10 */*/
     /*display: flex;*/         /* NEW, Spec - Firefox, Chrome, Opera */
     justify-content:space-around;
+    height: 300px;
 }
 
 #dataTable tr, td{
     padding: 10px;
     border: solid #e6e6e6 1px;
+    font-size: 12px;
 }
 
 #dataTable th{
     display: table-cell;
     color:white;
     text-align:center;
-    padding: 20px;
+    padding: 15px;
     font-weight:200;
-    font-size: 1em;
     font-family: Calibri, sans-serif;
     background-color: #3973ac;
     border: 	#e6e6e6 solid 1px;
+        font-size: 14px;
 }
 
 /*#dataTable th:nth-child(even){
@@ -146,6 +148,10 @@ body{
 
 .dc-chart g.row text{
     fill:black;
+}
+
+.dc-table-label{
+    font-weight:600;
 }
 
 #gapChart, #admin{
