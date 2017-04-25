@@ -84,37 +84,49 @@ function createStatsHash(data, keys, variable) {
         cf.adm2Dim = cf.dimension(function (d) { return d[keys[1]] });
         cf.adm3Dim = cf.dimension(function (d) { return d[keys[2]] });
 
-        var reduceSumVar = function (d) {
-            if (isNaN(d[variable])) {
+        function reduceSumVar(d) {
+            if (isNaN(parseInt(d[variable]))) {
                 return 0;
             } else {
                 return d[variable];
             }
         };
 
-        cf.adm1group = cf.adm1Dim.group().reduceSum(reduceSumVar);
+        var admin = ["#adm1+name", "#adm2+name", "#adm3+name"];
+        var index = 0;
 
-        cf.adm1group.top(Infinity).forEach(function (d, i) {
-            output[d.key] = {};
-            output[d.key].mapValue = d.value;
-            output[d.key].var = keys[0];
-        });
+        function reduceAdd(p, c) { //p is transient instance, c is current value
+            p.value = p.value + parseInt(reduceSumVar(c));
+            p.name = c[admin[index]];
+            return p;
+        };
+        function reduceRemove(p, c) {
+            p.value = p.value - parseInt(reduceSumVar(c));
+            p.name = c[admin[index]];
+            return p;
+        };
+        function reduceInitial() {
+            return { value : 0, name: "" };
+        };
+        function  addToOutput(group){
+            group.top(Infinity).forEach(function (d, i) {
+               output[d.key] = {};
+               output[d.key].mapValue = d.value.value;
+               output[d.key].var = keys[index];
+               output[d.key].name = d.value.name;
+           });
+        }
 
-        cf.adm2group = cf.adm2Dim.group().reduceSum(reduceSumVar);
+        cf.adm1group = cf.adm1Dim.group().reduce(reduceAdd, reduceRemove, reduceInitial);
+        addToOutput(cf.adm1group);
 
-        cf.adm2group.top(Infinity).forEach(function (d, i) {
-            output[d.key] = {};
-            output[d.key].mapValue = d.value;
-            output[d.key].var = keys[1];
-        });
+        index = 1;
+        cf.adm2group = cf.adm2Dim.group().reduce(reduceAdd, reduceRemove, reduceInitial);
+        addToOutput(cf.adm2group);
 
-        cf.adm3group = cf.adm3Dim.group().reduceSum(reduceSumVar);
-
-        cf.adm3group.top(Infinity).forEach(function (d, i) {
-            output[d.key] = {};
-            output[d.key].mapValue = d.value;
-            output[d.key].var = keys[2];
-        });
+        index = 2;
+        cf.adm3group = cf.adm3Dim.group().reduce(reduceAdd, reduceRemove, reduceInitial);
+        addToOutput(cf.adm3group);
 
         return output;
     } catch (e) { console.log("Error creating the Stats Hash (check inputs): ", e.message) }
@@ -406,9 +418,11 @@ function mergeData(data1, data2, data3) {
             })
             return newData;
         };
+
         set1 = transform(data1, "affected");
         set2 = transform(data2, "targeted");
         set3 = transform(data3, "reached");
+
         set2.forEach(function (c, i) {
             set1.push(c);
         })
@@ -439,7 +453,7 @@ function createCharts(data) {
             var gapChart = dc.rowChart('#gapChart');
             var admin = dc.rowChart('#admin');
 
-            var codeDimension = cf.dimension(function (d) { return d["code"]; })
+            var nameDimension = cf.dimension(function (d) { return d["name"]; })
             var statusDimension = cf.dimension(function (d) { return d["status"]; });
             var varDimension = cf.dimension(function (d) { return d["var"]; });
             var valueDimension = cf.dimension(function (d) { return d["mapValue"]; });
@@ -458,7 +472,7 @@ function createCharts(data) {
             };
 
             //affectedGroup: groups up each code (admin region) by affected number
-            var affectedGroup = codeDimension.group().reduce(reduceAdd, reduceRemove, reduceInitial);
+            var affectedGroup = nameDimension.group().reduce(reduceAdd, reduceRemove, reduceInitial);
             var statusGroup = statusDimension.group();
             var varGroup = varDimension.group();
 
@@ -485,8 +499,10 @@ function createCharts(data) {
                 .xAxis().ticks(5);
 
             var max = 100;
+            //print_filter(codeDimension);
+            //print_filter(affectedGroup);
             admin.width($('#admin').width())
-                .dimension(codeDimension)
+                .dimension(nameDimension)
                 .group(affectedGroup)
                 .elasticX(true)
                 .data(function (group) {
@@ -544,13 +560,16 @@ function filterData(data, code, variableName) {
 //function showsCharts depending on admin level
 function showCharts(newGeom, level) {
     var adminName = '';
+    var adminIndex = 0;
     breadcrumbs.forEach(function (c, i) {
         if (c !== '') {
             adminName = c;
+            adminindex = i + 1;
         };
     })
+
     if (adminName === 'Madagascar'||newGeom === "") {
-        var dataAdminM = filterData(mergedData, '#adm1+name', 'var');
+        var dataAdminM = filterData(mergedData, '#adm1+code', 'var');
         createCharts(dataAdminM);
     } else {
         var tempGeom = [];
@@ -558,8 +577,11 @@ function showCharts(newGeom, level) {
         newGeom.forEach(function (c, i) {
             tempGeom[i] = c.properties[admNames[level+1]];
         })
+
+        var adminCode = '#adm' + (level + 1) + '+code';
+        var reducedData = filterData(mergedData, adminCode, 'var');
         tempGeom.forEach(function (c, i) {
-            filterData(mergedData, c, 'code').forEach(function (c, i) {
+            filterData(reducedData, c, 'name').forEach(function (c, i) {
                 dataAdmin.push(c);
             })
         })
@@ -576,10 +598,9 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
     //data = "Array of Objects in the following format: array[1] = #sector: "MDG1"
 
     statsHash = createStatsHash(data, ['#adm1+code', '#adm2+code', '#adm3+code'], config.affected);
-    statsWithNames = createStatsHash(data, ['#adm1+name', '#adm2+name', '#adm3+name'], config.affected);
-    statsHash3WTargeted = createStatsHash(data3w, ['#adm1+name', '#adm2+name', '#adm3+name'], config.targeted);
-    statsHash3WReached = createStatsHash(data3w, ['#adm1+name', '#adm2+name', '#adm3+name'], config.reached);
-    mergedData = mergeData(statsWithNames, statsHash3WTargeted, statsHash3WReached);
+    statsHash3WTargeted = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.targeted);
+    statsHash3WReached = createStatsHash(data3w, ['#adm1+code', '#adm2+code', '#adm3+code'], config.reached);
+    mergedData = mergeData(statsHash, statsHash3WTargeted, statsHash3WReached);
     initDash();
 
     // Return Top level button
@@ -593,12 +614,3 @@ $.when(dataNeedCall, data3WCall, geomadm1Call, geomadm2Call, geomadm3Call).then(
         else { }
     });
 });
-
-////REMOVE ME
-function print_filter(filter) {
-    'use strict';
-    var f = eval(filter);
-    if (typeof (f.top) != "undefined") { f = f.top(Infinity); }
-    if (typeof (f.dimension) != "undefined") { f = f.dimension(function (d) { return ""; }).top(Infinity); }
-    console.log(filter + "(" + f.length + ") = " + JSON.stringify(f).replace("[", "[\n\t").replace(/}\,/g, "},\n\t").replace("]", "\n]"));
-}
