@@ -110,7 +110,10 @@ body{
     /*display: -webkit-flex; /* NEW - Safari 6.1+. iOS 7.1+, BB10 */*/
     /*display: flex;*/         /* NEW, Spec - Firefox, Chrome, Opera */
     justify-content:space-around;
-    height: 300px;
+    margin-bottom: 30px;
+    height:500px;
+    overflow:auto;
+    border-top: solid #e6e6e6 1px;
 }
 
 #dataTable tr, td{
