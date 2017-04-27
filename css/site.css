@@ -74,8 +74,8 @@ body{
     padding:5px;
 }
 .legend i {
-    width: 18px;
-    height: 18px;
+    width: 1em;
+    height: 1em;
     float: left;
     margin-right: 8px;
     opacity: 0.7;
@@ -98,34 +98,43 @@ body{
 }
 
 /*----------Data Table-------------*/
+.nav{
+    margin: 2em;
+}
 
 #dataTable{
-    margin-top:3em;
     text-align:center;
     border-collapse: collapse;
-    display: -webkit-box;  /* OLD - iOS 6-, Safari 3.1-6, BB7 */
-    display: -ms-flexbox;  /* TWEENER - IE 10 */
-    display: -webkit-flex; /* NEW - Safari 6.1+. iOS 7.1+, BB10 */
+    /*display: -webkit-box;  /* OLD - iOS 6-, Safari 3.1-6, BB7 */
+    /*display: -ms-flexbox;  /* TWEENER - IE 10 */
+    /*display: -webkit-flex; /* NEW - Safari 6.1+. iOS 7.1+, BB10 */*/
     /*display: flex;*/         /* NEW, Spec - Firefox, Chrome, Opera */
     justify-content:space-around;
+    margin-bottom: 30px;
+    height:500px;
+    overflow:auto;
+    border-top: solid #e6e6e6 1px;
 }
 
 #dataTable tr, td{
     padding: 10px;
     border: solid #e6e6e6 1px;
+    font-size: 12px;
 }
 
 #dataTable th{
     display: table-cell;
     color:white;
     text-align:center;
-    padding: 20px;
+    padding: 15px;
     font-weight:200;
-    font-size: 1.4em;
     font-family: Calibri, sans-serif;
+    background-color: #3973ac;
+    border: 	#e6e6e6 solid 1px;
+        font-size: 14px;
 }
 
-#dataTable th:nth-child(even){
+/*#dataTable th:nth-child(even){
     border: #3973ac solid 1px;
     background-color:#3973ac;
 }
@@ -133,7 +142,7 @@ body{
 #dataTable th:nth-child(odd){
     border: 	#304050 solid 1px;
     background-color:	#304050;
-}
+}*/
 
 
 #dataTable th, #dataTable td{
@@ -142,6 +151,10 @@ body{
 
 .dc-chart g.row text{
     fill:black;
+}
+
+.dc-table-label{
+    font-weight:600;
 }
 
 #gapChart, #admin{

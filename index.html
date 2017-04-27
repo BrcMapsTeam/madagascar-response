@@ -1,74 +1,80 @@
 ﻿<html>
-    <head>
-        <title>Madagascar RC Response</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="shortcut icon" href="favicon.ico">
-        <link rel="stylesheet" ype="text/css" href="css/bootstrap.min.css"/>
-        <link rel="stylesheet" type="text/css" href="css/leaflet.css"/>
-        <link rel="stylesheet" type="text/css" href="css/dc.css" />
-        <link rel="stylesheet" type="text/css" href="css/site.css"/>
-        <script src="js/jquery-2.1.4.min.js"></script>
-        <script src="js/d3.min.js"></script>
-        <script src="js/crossfilter.v1.min.js"></script>
-        <script src="js/dc.js"></script>
-        <script src="js/leaflet.js"></script>
-        <script src="js/topojson.v1.min.js"></script>
-        <script src="js/bootstrap.min.js"></script>
-        <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
-        <!--<script type="text/javascript">
-            var _gaq = _gaq || [];
-            _gaq.push(['_setAccount', 'UA-46399763-1']);
-            _gaq.push(['_trackPageview']);
+<head>
+    <title>Madagascar RC Response</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="stylesheet" ype="text/css" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="css/leaflet.css" />
+    <link rel="stylesheet" type="text/css" href="css/dc.css" />
+    <link rel="stylesheet" type="text/css" href="css/site.css" />
+    <script src="js/jquery-2.1.4.min.js"></script>
+    <script src="js/d3.min.js"></script>
+    <script src="js/crossfilter.v1.min.js"></script>
+    <script src="js/dc.js"></script>
+    <script src="js/leaflet.js"></script>
+    <script src="js/topojson.v1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+    <!--<script type="text/javascript">
+        var _gaq = _gaq || [];
+        _gaq.push(['_setAccount', 'UA-46399763-1']);
+        _gaq.push(['_trackPageview']);
 
-            (function() {
-                 var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-                 ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-                 var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-            })();
-        </script>-->         
-    </head>
-    <body>
-        <div class="container">
-                <div class="row">
-                    <div class="col-sm-8">  
-                        <h2 id="title">Madagascar RC Response</h2>
-                    </div>                                         
-                </div>
-                <div id="header" class="row margintop20">
-                    <div class="col-sm-8">  
-                        <p id="description">
-                            Please click on the map below to drill down to lower admin levels. To return/change level, you can click on the map, use the reset button or the navigation links.
-                        </p>
-                    </div>                            
-                    <div class="col-sm-2">
-                        <a id="reinit" class="btn btn-primary">Return top level</a>
-                    </div>
-                    <div class="col-sm-2">
-                        <a id="reinit" class="btn btn-primary">Contacts</a>
-                    </div>                                                                            
-                </div>
-                <div class="row loading">
-                    <div class="col-sm-12">
-                        <h2>Loading</h2>
-                    </div>
-                </div>
-                <div class="row dash">
-                    <div class="col-md-6">
-                        <div id="hdx-ipc-map"></div>                            
-                    </div>
-                    <div class="col-md-6">
-                        <div id="panel-breadcrumbs"></div>
-                        <div id="panel-data"></div>
-                        <div id="gapChart"></div>
-                        <div id="admin"></div>
-                        <div id="errorText"></div>       
-                    </div>
-                    <div class="col-md-6">
-                        <div id="dataTable"></div>       
-                    </div>                                                   
-                </div>                                                
+        (function() {
+             var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+             ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+             var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+    </script>-->
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-8">
+                <h2 id="title">Madagascar RC Response</h2>
+            </div>
         </div>
-        <script src="js/site.js"></script>
-    </body>
+        <div id="header" class="row margintop20">
+            <div class="col-sm-8">
+                <p id="description">
+                    Click on the map below to drill down to lower admin levels.
+                    <br />
+                    Click on the charts to filter data.
+                    <br />
+                    To return/change level, you can click on the map, use the reset button or the navigation links.
+                </p>
+            </div>
+            <div class="col-sm-2">
+                <a id="reinit" class="btn btn-primary">Return top level</a>
+            </div>
+            <div class="col-sm-2">
+                <a id="reinit" class="btn btn-primary">Contacts</a>
+            </div>
+        </div>
+        <div class="row loading">
+            <div class="col-sm-12">
+                <h2>Loading</h2>
+            </div>
+        </div>
+        <div class="row nav">
+            <div class="col-md-12 text-center" id="panel-breadcrumbs"></div>
+        </div>
+        <div class="row dash">
+            <div class="col-md-4">
+                <div id="hdx-ipc-map"></div>
+            </div>
+            <div class="col-md-5">
+                <div id="panel-data"></div>
+                <div id="gapChart"></div>
+                <div id="admin"></div>
+                <div id="errorText"></div>
+            </div>
+            <div class="col-md-3">
+                <div id="dataTable"></div>
+            </div>
+        </div>
+    </div>
+    <script src="js/site.js"></script>
+</body>
 </html>
